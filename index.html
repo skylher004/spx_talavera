@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Operations Dashboard</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Segoe UI, sans-serif;
+}
+
+body{
+min-height:100vh;
+display:flex;
+align-items:center;
+justify-content:center;
+padding:20px;
+transition:.3s;
+}
+
+/* DARK MODE */
+
+body.dark{
+background:linear-gradient(135deg,#0f172a,#1e293b,#334155);
+color:white;
+}
+
+/* LIGHT MODE */
+
+body.light{
+background:linear-gradient(135deg,#f1f5f9,#e2e8f0);
+color:#333;
+}
+
+.container{
+width:100%;
+max-width:1000px;
+}
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:30px;
+}
+
+.title{
+font-size:28px;
+font-weight:600;
+}
+
+.toggle{
+cursor:pointer;
+border:none;
+padding:10px 18px;
+border-radius:30px;
+font-weight:600;
+font-size:14px;
+background:#6366f1;
+color:white;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:16px;
+}
+
+/* CARD */
+
+.card{
+
+text-decoration:none;
+padding:35px 15px;
+border-radius:18px;
+
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+
+font-size:17px;
+font-weight:600;
+
+transition:.25s;
+}
+
+/* DARK CARD */
+
+body.dark .card{
+background:rgba(255,255,255,0.08);
+border:1px solid rgba(255,255,255,0.15);
+color:white;
+}
+
+/* LIGHT CARD */
+
+body.light .card{
+background:white;
+border:1px solid #e5e7eb;
+color:#333;
+box-shadow:0 5px 15px rgba(0,0,0,0.08);
+}
+
+.card:hover{
+transform:translateY(-5px) scale(1.03);
+}
+
+.icon{
+font-size:34px;
+margin-bottom:10px;
+}
+
+/* TABLET */
+
+@media (min-width:650px){
+
+.grid{
+grid-template-columns:repeat(3,1fr);
+}
+
+}
+
+/* DESKTOP */
+
+@media (min-width:1000px){
+
+.grid{
+grid-template-columns:repeat(4,1fr);
+}
+}
+.theme-toggle{
+display:flex;
+align-items:center;
+gap:10px;
+font-weight:600;
+}
+
+.switch {
+position: relative;
+display: inline-block;
+width: 50px;
+height: 26px;
+}
+
+.switch input {
+opacity: 0;
+width: 0;
+height: 0;
+}
+
+.slider {
+position: absolute;
+cursor: pointer;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background-color: #ccc;
+transition: .3s;
+border-radius: 30px;
+}
+
+.slider:before {
+position: absolute;
+content: "";
+height: 20px;
+width: 20px;
+left: 3px;
+bottom: 3px;
+background-color: white;
+transition: .3s;
+border-radius: 50%;
+}
+
+input:checked + .slider {
+background-color: #6366f1;
+}
+
+input:checked + .slider:before {
+transform: translateX(24px);
+}
+</style>
+</head>
+
+<body class="dark">
+<div class="container">
+    <div class="header">
+        <div class="title">
+            Operations Dashboard
+        </div>
+        <div class="theme-toggle">
+            <span id="modeLabel">🌙 Dark</span>
+            <label class="switch">
+            <input type="checkbox" id="themeToggle">
+            <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+    <div class="grid">
+        <a href="https://spx.shopee.ph/#/hubLinehaulTrips/trip" target="_blank" class="card">
+                <div class="icon">🚛</div>
+                Linehaul
+        </a>
+        <a href="https://spx.shopee.ph/#/orderTracking" target="_blank" class="card">
+            <div class="icon">🔍</div>
+            Order Tracking
+        </a>
+
+        <a href="https://spx.shopee.ph/#/generalReceiveTaskOps" target="_blank" class="card">
+            <div class="icon">📊</div>
+            Single Receive
+        </a>
+
+        <a href="https://spx.shopee.ph/#/assignment-task-new/list" target="_blank" class="card">
+            <div class="icon">🚚</div>
+            delivery Assignment
+        </a>
+
+        <a href="forecast.html" target="_blank" class="card">
+        <div class="icon">📈</div>
+            Forecast
+        </a>
+
+        <a href="misrouted.html" target="_blank" class="card">
+            <div class="icon">📦</div>
+            Misrouted
+        </a>
+
+        <a href="return.html" target="_blank" class="card">
+            <div class="icon">↩️</div>
+            Return FM/LM
+        </a>
+
+        <a href="undispatched.html" target="_blank" class="card">
+            <div class="icon">🚚</div>
+            Undispatched
+        </a>
+
+        <a href="task.html" target="_blank" class="card">
+            <div class="icon">✅</div>
+            Task
+        </a>
+
+        <a href="report.html" target="_blank" class="card">
+            <div class="icon">📄</div>
+            Report File
+        </a>
+    </div>
+</div>
+
+<script>
+const toggle = document.getElementById("themeToggle");
+const label = document.getElementById("modeLabel");
+
+toggle.addEventListener("change", function(){
+
+document.body.classList.toggle("dark");
+document.body.classList.toggle("light");
+
+if(toggle.checked){
+label.textContent = "☀️ Light";
+}else{
+label.textContent = "🌙 Dark";
+}
+
+});
+
+</script>
+
+</body>
+</html>

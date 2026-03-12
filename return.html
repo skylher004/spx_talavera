@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talavera Hub | Forcast</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <style>
+        :root { --primary: #0d6efd; --dark-bg: #1a1c23; --card-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', system-ui, sans-serif; font-size: 0.82rem; color: #333; margin: 0; }
+
+        /* LOADING OVERLAY MOBILE FIX */
+        #loadingOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95); display: none; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 9999; color: white;
+            padding: 25px; text-align: center;
+        }
+        #loadMsg {
+            width: 100%; max-width: 300px; overflow-wrap: break-word;
+            font-size: 0.85rem; font-weight: 600; margin-top: 12px; line-height: 1.4;
+        }
+        .loader { border: 4px solid #333; border-top: 4px solid var(--primary); border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .main-header { background: var(--dark-bg); color: white; padding: 1rem; top: 0; z-index: 1000; border-bottom: 3px solid var(--primary); }
+        .header-controls { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; width: 100%; }
+        @media (min-width: 768px) { .header-controls { margin-top: 0; width: auto; } }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; }
+        @media (min-width: 768px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (min-width: 1200px) { .stats-grid { grid-template-columns: repeat(6, 1fr); } }
+
+        .stat-card { background: #fff; padding: 12px; border-radius: 10px; box-shadow: var(--card-shadow); border-bottom: 4px solid #dee2e6; }
+        .stat-card b { font-size: 0.62rem; color: #6c757d; text-transform: uppercase; display: block; }
+        .stat-card span { font-size: 1.3rem; font-weight: 800; display: block; }
+
+        .area-container { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
+        @media (min-width: 992px) { .area-container { flex-direction: row; } }
+
+        .town-section { background: white; border-radius: 12px; padding: 15px; flex: 1; box-shadow: var(--card-shadow); border-top: 5px solid #dee2e6; }
+        .grid-wrapper { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 6px; margin-top: 10px; }
+        
+        .town-item { border: 1px solid #edf2f7; border-radius: 6px; display: flex; justify-content: space-between; padding: 6px 8px; font-size: 0.72rem; background: #fafbfc; }
+        .town-item.hot { background: #fff1f2; color: #e11d48; font-weight: bold; border-color: #fecaca; }
+
+        .table-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: var(--card-shadow); border-top: 4px solid #dee2e6; }
+        .scroll-area {  border: 1px solid #eee; border-radius: 8px; margin-top: 10px; }
+        .table { min-width: 700px; margin-bottom: 0; }
+        .table thead th { background: #2d3748; color: white; position: sticky; top: 0; font-size: 0.68rem; padding: 10px; z-index: 10; }
+        
+        .count-badge { background: var(--primary); color: white; padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: bold; }
+        .search-box { border-radius: 20px; border: 1px solid #4a5568; background: #2d3748; color: white; padding: 6px 15px; flex-grow: 1; }
+   
+           table { width: 100%; border-collapse: collapse; table-layout: auto; }
+        
+        /* Forces text to stay on one line */
+        th, td { 
+            border: 1px solid black; 
+            padding: 2px 2px; 
+            text-align: left; 
+            white-space: nowrap; 
+            overflow: hidden;
+            height: 20px;
+        }
+        
+        .header-row { background-color: #d9d9d9; font-weight: bold; text-align: center; font-size: 12pt; width: 100%; white-space:nowrap;}
+        .sub-header { background-color: #bfbfbf; font-weight: bold; text-align: center; font-size: 8pt; }
+        .total-row { background-color: #d9d9d9; font-weight: bold; }
+        .num { text-align: center; width: 30px; font-weight: bold; }
+        
+        /* TAL Color Coding */
+        .tal1 { color: #7030a0; } .tal2 { color: #0070c0; } .tal3 { color: #ffc000; }
+        .tal4 { color: #c00000; } .tal5 { color: #0070c0; } .tal6 { color: #ff0000; }
+        .tal7 { color: #ff0000; } .tal8 { color: #ff0000; } .tal9 { color: #ff0000; }
+
+        .summary-table { width: 250px; margin-left: auto; margin-top: 20px; }
+        .summary-label { background-color: #bfbfbf; font-weight: bold; }
+
+       @media print {
+    /* Hide everything except the report */
+    header, .header-controls, .stats-grid, .area-container, .table-card, button, #tSearch {
+        display: none !important;
+    }
+
+    /* Show only the print section */
+    .print, .print * {
+        visibility: visible !important;
+    }
+
+    .print {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        background: white !important;
+    }
+
+    @page {
+        size: A4 landscape;
+        margin: 10mm;
+    }
+
+    table {
+        width: 100% !important;
+        border: 0px solid black !important;
+    }
+    .summary-table { width: 250px!important; margin-left: auto; margin-top: 20px; }
+    .summary-label { background-color: #bfbfbf; font-weight: bold; }
+}
+
+   
+   </style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+    <div class="loader"></div>
+    <div id="loadMsg">Processing Pipeline Data...</div>
+</div>
+
+<header class="main-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+            <h6 class="fw-bold m-0 text-white">TALAVERA HUB</h6>
+            <div class="header-controls">
+                <input type="text" id="tSearch" class="search-box" placeholder="Filter by town...">
+                <button class="btn btn-primary btn-sm px-3 fw-bold" onclick="$('#file').click()">UPLOAD</button>
+                <input id="file" type="file" accept=".csv, .xlsx, .xls" multiple class="d-none" />
+          
+            </div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card border-danger"><b>Total</b><span id="c-ops" class="text-danger">0</span></div>
+            <div class="stat-card border-success"><b>Return</b><span id="t-misrouted" class="text-success">0</span></div>
+          
+        </div>
+    </div>
+</header>
+
+<main class="container-fluid py-3">
+    <div class="table-card" style="border-top-color: #0d6efd;">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+        <span class="fw-bold text-primary">RETURN</span>
+    </div>
+            <span id="t-misrouted-b" class="count-badge">0</span></div>
+        <div class="scroll-area"><table id="misrouted" class="table table-sm table-hover"><thead><tr>
+            <th>Order ID <button class="btn btn-primary btn-xs" style="font-size: 10px; padding: 0 4px;" onclick="copyColumn('oid')">COPY</button></th>
+            <th>Town <button class="btn btn-primary btn-xs" style="font-size: 10px; padding: 0 4px;" onclick="copyColumn('town')">COPY</button></th>
+            <th>Sort Code</th><th>Status</th><th>Current Station</th><th>Destination Station</th></tr></thead><tbody></tbody></table></div>
+    </div>
+
+
+<script>
+
+// --- 0. UTILITY: FILE EXTRACTION ---
+const extractData = (file) => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const wb = XLSX.read(data, { type: "array" });
+                const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "" });
+                
+                // Standardize keys and extract needed fields
+                const normalized = json.map(r => {
+                    let row = {};
+                    for (let k in r) { row[k.toLowerCase().trim()] = r[k]; }
+                    return {
+                        oid: row["order id"] || "",
+                        sort: String(row["sort code name"] || "").toUpperCase(),
+                        town: String(row["town name"] || "UNKNOWN").toUpperCase(),
+                        stat: String(row["status"] || ""),
+                        curr: String(row["current station"] || "").trim(),
+                        dest: String(row["destination station"] || "").trim()
+                    };
+                });
+                resolve(normalized);
+            } catch (err) { reject(err); }
+        };
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file);
+    });
+};
+
+$(function () {
+    // --- 1. CONFIGURATION & STATE ---
+    const HUB_APP = {
+        config: {
+            STATIONS: { SOC: "SOC 4", HUB: "Talavera Hub" },
+        },
+        data: {
+            received: []
+        }
+    };
+
+    // --- 2. PIPELINE (Logic Engine) ---
+    const Pipeline = {
+        process(rawData) {
+            Object.keys(HUB_APP.data).forEach(key => HUB_APP.data[key] = []);
+            const cfg = HUB_APP.config;
+            const d = HUB_APP.data;
+
+            for (let i = 0; i < rawData.length; i++) {
+                const row = rawData[i];
+                const s = row.stat || "";
+                const c = row.curr || "";
+                const dest = row.dest || "";
+                const sort = row.sort || "";
+
+                // Updated Station Logic based on your specific rules:
+                // 1. Received: Dest "Talavera Hub" AND Current "Talavera Hub"
+                const isRec = (s.includes("LMHub_Received") || s.includes("FMHub_Received")) &&
+                              c.includes(cfg.STATIONS.HUB);
+                // console.log(`Row ${i}: isRec=${isRec} (Status: ${s}, Dest: ${dest}, Curr: ${c})`);
+                 if (isRec) d.received.push(row);
+
+            }
+        }
+    };
+
+    // --- 3. UI RENDERER ---
+    const UI = {
+        renderAll() {
+            const d = HUB_APP.data;
+            $("#c-ops").text((d.received.length).toLocaleString());
+            $("#t-misrouted, #t-misrouted-b").text(d.received.length.toLocaleString());
+          
+            this.table("#misrouted", d.received);            
+        },
+        table(target, list) {
+            const html = list.slice(0, 500).map(i => `<tr><td>${i.oid}</td><td>${i.town}</td><td>${i.sort}</td><td>${i.stat}</td><td>${i.curr}</td><td>${i.dest}</td></tr>`).join('');
+            $(target).find('tbody').html(html || '<tr><td colspan="5" class="text-center">No matching records</td></tr>');
+        }
+    };
+
+    // --- 5. CONTROLLER ---
+    $("#file").on("change", async function(e) {
+        if (!e.target.files.length) return;
+        $("#loadingOverlay").css("display", "flex");
+        
+        setTimeout(async () => {
+            try {
+                let combinedRaw = [];
+                for (let f of e.target.files) {
+                    $("#loadMsg").text(`Reading: ${f.name}`);
+                    const data = await extractData(f); 
+                    combinedRaw = combinedRaw.concat(data);
+                }
+                $("#loadMsg").text(`Processing ${combinedRaw.length.toLocaleString()} rows...`);
+                Pipeline.process(combinedRaw);
+                UI.renderAll();
+               
+            } catch (err) {
+                console.error(err);
+                alert("Processing Error");
+            } finally {
+                $("#loadingOverlay").fadeOut();
+                $("#file").val('');
+            }
+        }, 50);
+    });
+
+
+
+window.copyColumn = function(field) {
+    const data = HUB_APP.data.received;
+    
+    if (data.length === 0) {
+        alert("No data to copy!");
+        return;
+    }
+
+    // Extract only the specific field (oid or town) and join with new lines
+    const textToCopy = data.map(row => row[field]).join('\n');
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        alert(`Copied ${data.length} ${field === 'oid' ? 'Order IDs' : 'Towns'}!`);
+    }).catch(err => {
+        console.error('Error:', err);
+    });
+};
+});
+</script>
+
+</body>
+</html>

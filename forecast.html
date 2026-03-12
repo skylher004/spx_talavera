@@ -1,0 +1,787 @@
+ <!-- working table print -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talavera Hub | Forcast</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <style>
+        :root { --primary: #0d6efd; --dark-bg: #1a1c23; --card-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', system-ui, sans-serif; font-size: 0.82rem; color: #333; margin: 0; }
+
+        /* LOADING OVERLAY MOBILE FIX */
+        #loadingOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95); display: none; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 9999; color: white;
+            padding: 25px; text-align: center;
+        }
+        #loadMsg {
+            width: 100%; max-width: 300px; overflow-wrap: break-word;
+            font-size: 0.85rem; font-weight: 600; margin-top: 12px; line-height: 1.4;
+        }
+        .loader { border: 4px solid #333; border-top: 4px solid var(--primary); border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+ .container-fluid { margin-bottom: 100px;}
+        .main-header { background: var(--dark-bg); color: white; padding: 1rem; top: 0; z-index: 1000; border-bottom: 3px solid var(--primary); }
+        .header-controls { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; width: 100%; }
+        @media (min-width: 768px) { .header-controls { margin-top: 0; width: auto; } }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; }
+        @media (min-width: 768px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (min-width: 1200px) { .stats-grid { grid-template-columns: repeat(6, 1fr); } }
+
+        .stat-card { background: #fff; padding: 12px; border-radius: 10px; box-shadow: var(--card-shadow); border-bottom: 4px solid #dee2e6; }
+        .stat-card b { font-size: 0.62rem; color: #6c757d; text-transform: uppercase; display: block; }
+        .stat-card span { font-size: 1.3rem; font-weight: 800; display: block; }
+
+        .area-container { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
+        @media (min-width: 992px) { .area-container { flex-direction: row; } }
+
+        .town-section { background: white; border-radius: 12px; padding: 15px; flex: 1; box-shadow: var(--card-shadow); border-top: 5px solid #dee2e6; }
+        .grid-wrapper { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 6px; margin-top: 10px; }
+        
+        .town-item { border: 1px solid #edf2f7; border-radius: 6px; display: flex; justify-content: space-between; padding: 6px 8px; font-size: 0.72rem; background: #fafbfc; }
+        .town-item.hot { background: #fff1f2; color: #e11d48; font-weight: bold; border-color: #fecaca; }
+
+        .table-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: var(--card-shadow); border-top: 4px solid #dee2e6; }
+        .scroll-area { max-height: 350px; overflow: auto; border: 1px solid #eee; border-radius: 8px; margin-top: 10px; }
+        .table { min-width: 700px; margin-bottom: 0; }
+        .table thead th { background: #2d3748; color: white; position: sticky; top: 0; font-size: 0.68rem; padding: 10px; z-index: 10; }
+        
+        .count-badge { background: var(--primary); color: white; padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: bold; }
+        .search-box { border-radius: 20px; border: 1px solid #4a5568; background: #2d3748; color: white; padding: 6px 15px; flex-grow: 1; }
+   
+           table { width: 100%; border-collapse: collapse; table-layout: auto; }
+        
+        /* Forces text to stay on one line */
+        th, td { 
+            border: 1px solid black; 
+            padding: 0px 10px; 
+            text-align: left; 
+            white-space: nowrap; 
+            overflow: hidden;
+            height: 21px;
+        }
+        .header-label{
+            font-size: 20px;
+            text-align: center;
+        }
+        .header-row { background-color: #d9d9d9; font-weight: bold; text-align: center; font-size: 12pt; white-space: nowrap;width:100%;}
+        .sub-header { background-color: #bfbfbf; font-weight: bold; text-align: center; font-size: 8pt; }
+        .total-row { background-color: #d9d9d9; font-weight: bold; }
+        .num { text-align: center; width: 30px; font-weight: bold; }
+        
+        /* TAL Color Coding */
+        .tal1 { color: #7030a0; } .tal2 { color: #0070c0; } .tal3 { color: #ffc000; }
+        .tal4 { color: #c00000; } .tal5 { color: #0070c0; } .tal6 { color: #ff0000; }
+        .tal7 { color: #ff0000; } .tal8 { color: #ff0000; } .tal9 { color: #ff0000; }
+
+        .summary-table { width: 250px; margin-left: auto; margin-top: 20px; }
+        .summary-label { background-color: #bfbfbf; font-weight: bold; }
+
+        .sdo-header{
+            display: none;
+        }
+
+       @media print {
+    /* Hide everything except the report */
+    header, .header-controls, .stats-grid, .area-container, .table-card, button, #tSearch {
+        display: none !important;
+    }
+    .sdo-header{
+            display: flex;
+        }
+
+    /* Show only the print section */
+    .print, .print * {
+        visibility: visible !important;
+    }
+
+    .print {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        background: white !important;
+    }
+
+    @page {
+        size: A4 landscape;
+        margin: 10mm;
+    }
+
+    table {
+        width: 100% !important;
+        
+    }
+    .summary-table { width: 250px!important; margin-left: auto; margin-top: 20px; }
+    .summary-label { background-color: #bfbfbf; font-weight: bold; }
+    .page-break {
+        page-break-before: always;
+    }
+}
+
+   
+   </style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+    <div class="loader"></div>
+    <div id="loadMsg">Processing Pipeline Data...</div>
+</div>
+
+<header class="main-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+            <h6 class="fw-bold m-0 text-white">TALAVERA HUB</h6>
+            <div class="header-controls">
+                <input type="text" id="tSearch" class="search-box" placeholder="Filter by town...">
+                <button class="btn btn-primary btn-sm px-3 fw-bold" onclick="$('#file').click()">UPLOAD</button>
+                <input id="file" type="file" accept=".csv, .xlsx, .xls" multiple class="d-none" />
+              <button class="btn btn-warning btn-sm px-3 fw-bold" onclick="downloadTemplate()">DOWNLOAD</button>
+                <button onclick="window.print()" class="btn btn-success fw-bold" 
+        style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); padding: 10px 25px;">
+    Print A4 Report
+</button>
+            </div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card border-danger"><b>Total</b><span id="c-ops" class="text-danger">0</span></div>
+            <div class="stat-card border-success"><b>LMHub_Received</b><span id="c-rec" class="text-success">0</span></div>
+            <div class="stat-card border-warning"><b>SOC_LHTransporting</b><span id="c-ing" class="text-warning">0</span></div>
+            <div class="stat-card border-info"><b>SOC_LHTransported</b><span id="c-ed" class="text-info">0</span></div>
+            <div class="stat-card border-primary"><b>SD All</b><span id="c-sdo" class="text-primary">0</span></div>
+            <div class="stat-card border-dark"><b>TALAVERA All</b><span id="c-tvr" class="text-dark">0</span></div>
+        </div>
+    </div>
+</header>
+
+<main class="container-fluid py-3">
+    <div class="area-container">
+        <div class="town-section" style="border-top-color: #0d6efd;">
+            <div class="d-flex justify-content-between align-items-center"><span class="fw-bold text-primary">SANTO DOMINGO</span><span class="count-badge" id="q-sdo-p">0</span></div>
+            <div id="grid-sdo" class="grid-wrapper"></div>
+        </div>
+        <div class="town-section" style="border-top-color: #dc3545;">
+            <div class="d-flex justify-content-between align-items-center"><span class="fw-bold text-danger">UPPER</span><span class="count-badge bg-danger" id="q-up-p">0</span></div>
+            <div id="grid-up" class="grid-wrapper"></div>
+        </div>
+        <div class="town-section" style="border-top-color: #212529;">
+            <div class="d-flex justify-content-between align-items-center"><span class="fw-bold text-dark">LOWER</span><span class="count-badge bg-dark" id="q-low-p">0</span></div>
+            <div id="grid-low" class="grid-wrapper"></div>
+        </div>
+    </div>
+
+    <div class="table-card" style="border-top-color: #0d6efd;">
+        <div class="d-flex justify-content-between align-items-center"><span class="fw-bold text-primary">SANTO DOMINGO (SDO) ALL DATA</span><span id="q-sdo-t" class="count-badge">0</span></div>
+        <div class="scroll-area"><table id="t-sdo" class="table table-sm table-hover"><thead><tr><th>Order ID</th><th>Town</th><th>Sort Code</th><th>Status</th><th>Current Station</th></tr></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="table-card" style="border-top-color: #212529;">
+        <div class="d-flex justify-content-between align-items-center"><span class="fw-bold text-dark">TALAVERA (TVR) ALL DATA</span><span id="q-tvr-t" class="count-badge bg-dark">0</span></div>
+        <div class="scroll-area"><table id="t-tvr" class="table table-sm table-hover"><thead><tr><th>Order ID</th><th>Town</th><th>Sort Code</th><th>Status</th><th>Current Station</th></tr></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="table-card" style="border-top-color: #198754;">
+        <div class="d-flex justify-content-between align-items-center"><span class="fw-bold text-success">STATUS: LMHUB_RECEIVED</span><span id="q-rec-t" class="count-badge bg-success">0</span></div>
+        <div class="scroll-area"><table id="t-rec" class="table table-sm table-hover"><thead><tr><th>Order ID</th><th>Town</th><th>Sort</th><th>Destination</th><th>Current</th></tr></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="table-card" style="border-top-color: #ffc107;">
+        <div class="d-flex justify-content-between align-items-center"><span class="fw-bold text-warning">STATUS: SOC_TRANSPORTING</span><span id="q-ing-t" class="count-badge bg-warning">0</span></div>
+        <div class="scroll-area"><table id="t-ing" class="table table-sm table-hover"><thead><tr><th>Order ID</th><th>Town</th><th>Sort</th><th>Destination</th><th>Current</th></tr></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="table-card" style="border-top-color: #0dcaf0;">
+        <div class="d-flex justify-content-between align-items-center"><span class="fw-bold text-info">STATUS: SOC_TRANSPORTED</span><span id="q-ed-t" class="count-badge bg-info">0</span></div>
+        <div class="scroll-area"><table id="t-ed" class="table table-sm table-hover"><thead><tr><th>Order ID</th><th>Town</th><th>Sort</th><th>Destination</th><th>Current</th></tr></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="print">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
+        <h2 style="margin: 0;">FORECAST</h2><h3 id="print-date" style="margin: 0;">0</h3>
+    </div>
+    <div class="tvr" style="margin-bottom: 100px;">
+        <table>
+            <tr class="header-row"><td class="header-label" colspan="14">LOWER AREA (0)</td></tr>
+            <tr class="sub-header">
+                <td colspan="2" class="tal1">TAL 1</td>
+                <td colspan="2" class="tal2">TAL 2</td>
+                <td colspan="2" class="tal3">TAL 3</td>
+                <td colspan="2" class="tal4">TAL 4</td>
+                <td colspan="2" class="tal5">TAL 5 A</td>
+                <td colspan="2" class="tal5">TAL 5 B</td>
+                <td colspan="2" class="tal5">TAL 5 C</td>
+            </tr>
+            <tr>
+                <td>Homestead I</td><td class="num"></td>
+                <td>Dinarayat</td><td class="num"></td>
+                <td>Poblacion Sur</td><td class="num"></td>
+                <td>Pag-Asa (Pob.)</td><td class="num"></td>
+                <td>Burnay</td><td class="num"></td>
+                <td>Calipahan</td><td class="num"></td>
+                <td>Purok Matias (Pob.)</td><td class="num"></td>
+            </tr>
+            <tr>
+                <td>Paludpod</td><td class="num"></td>
+                <td>La Torre</td><td class="num"></td>
+                <td>Maestrang Kikay (Pob.)</td><td class="num"></td>
+                <td>Marcos District (Pob.)</td><td class="num"></td>
+                <td>Campos</td><td class="num"></td><td></td>
+                <td></td>
+                <td>Pulong San Miguel (Pob.)</td><td class="num"></td>
+            </tr>
+            <tr>
+                <td>Baluga</td><td class="num"></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td>Esguerra District (Pob.)</td><td class="num"></td>
+                <td>Valle</td><td class="num"></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td>Pinagpanaan</td><td class="num"></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td>San Miguel Na Munti</td><td class="num"></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr class="total-row">
+                <td>TOTAL</td><td class="num"></td>
+                <td></td><td class="num"></td>
+                <td></td><td class="num"></td>
+                <td></td><td class="num"></td>
+                <td></td><td class="num"></td>
+                <td></td><td class="num"></td>
+                <td></td><td class="num"></td>
+            </tr>
+
+            <tr><td colspan="14" style="border:none; height: 100px;"></td></tr>
+
+            <tr class="header-row"><td class="header-label" colspan="15">UPPER AREA (0)</td></tr>
+            <tr class="sub-header">
+                <td colspan="2" class="tal6">TAL 6</td><td colspan="2" class="tal7">TAL 7</td>
+                <td colspan="2" class="tal8">TAL 8</td><td colspan="2" class="tal9">TAL 9</td>
+                <td colspan="2"></td><td colspan="2"></td><td colspan="2"></td>
+            </tr>
+            <tr>
+                <td>Andal Alino (Pob.)</td><td class="num"></td>
+                <td>San Pascual</td><td class="num"></td>
+                <td>Sicsican Matanda</td><td class="num"></td>
+                <td>Bakal I</td><td class="num"></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td>Mabuhay</td><td class="num"></td>
+                <td>Bagong Silang</td><td class="num"></td>
+                <td>Tabacao</td><td class="num"></td>
+                <td>Bakal II</td><td class="num"></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td>Collado</td><td class="num"></td>
+                <td>Lomboy</td><td class="num"></td>
+                <td>Casulucan Este</td><td class="num"></td>
+                <td>Bakal III</td><td class="num"></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td>Cabubulaonan</td><td class="num"></td>
+                <td></td>
+                <td></td>
+                <td>Tagaytay</td><td class="num"></td>
+                <td>Matingkis</td><td class="num"></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td>Gulod</td><td class="num"></td>
+                <td></td><td></td>
+                <td>bulac</td><td class="num"></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td>Bantug Hacienda</td><td class="num"></td>
+                <td></td><td></td>
+                <td>Pantoc Bulac</td><td class="num"></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td>Sampaloc</td><td class="num"></td>
+                <td></td><td></td>
+                <td>Bantug Hamog (Basang Hamog)</td><td class="num"></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr class="total-row">
+                <td>TOTAL</td><td class="num"></td>
+                <td></td><td class="num"></td>
+                <td></td><td class="num"></td>
+                <td></td><td class="num"></td>
+                <td></td><td></td><td></td>
+                <td></td><td></td><td></td>
+            </tr>
+        </table>
+        <table class="summary-table">
+            <tr><td class="summary-label">VIA LINEHAUL</td><td class="num" style="width: 80px;">0</td></tr>
+            <tr><td class="summary-label">BLENDED</td><td class="num">175</td></tr>
+            <tr><td class="summary-label">RIDER'S COUNT</td><td class="num">0</td></tr>
+        </table>
+    </div>
+    <div class="sdo page-break">
+        <div class="sdo-header" style="justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
+            <h2 style="margin: 0;">FORECAST</h2><h3 id="sdoprint-date" style="margin: 0;">0</h3>
+        </div>
+        <table>
+            <tr class="header-row"><td class="header-label" colspan="10">SANTO DOMINGO (0)</td></tr>
+            <tr class="sub-header">
+                <td colspan="2" class="sd1">SD 1</td>
+                <td colspan="2" class="sd2">SD 2</td>
+                <td colspan="2" class="sd3">SD 3</td>
+                <td colspan="2" class="sd4">SD 4</td>
+                <td colspan="2" class="sd5">SD 5</td>
+            </tr>
+            <tr>
+                <td>Malaya (Pook Malaya)</td><td class="num"></td>
+                <td>Malasin</td><td class="num"></td>
+                <td>Sagaba</td><td class="num"></td>
+                <td>Santo Rosario</td><td class="num"></td>
+                <td>San Francisco</td><td class="num"></td>
+            </tr>
+            <tr>
+                <td>Hulo</td><td class="num"></td>
+                <td>Cabugao</td><td class="num"></td>
+                <td>Burgos</td><td class="num"></td>
+                <td>Comitang</td><td class="num"></td>
+                <td>San Fabian</td><td class="num"></td>
+            </tr>
+            <tr>
+                <td></td><td></td>
+                <td>Poblacion</td><td class="num"></td>
+                <td></td><td></td>
+                <td>General Luna</td><td class="num"></td>
+                <td>Buasao</td><td class="num"></td>
+            </tr>
+            <tr>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+           
+            <tr class="total-row">
+                <td>TOTAL</td><td class="num"></td>
+                <td></td><td class="num"></td>
+                <td></td><td class="num"></td>
+                <td></td><td class="num"></td>
+                <td></td><td class="num"></td>
+            </tr>
+
+            <tr><td colspan="10" style="border:none; height: 100px;"></td></tr>
+
+            <tr class="header-row"><td class="header-label" colspan="10"></td></tr>
+            <tr class="sub-header">
+                <td colspan="2" class="sd6">SD 6</td>
+                <td colspan="2" class="sd7">SD 7</td>
+                <td colspan="2" class="sd8">SD 8</td>
+                <td colspan="2"></td>
+                <td colspan="2"></td>
+            </tr>
+            <tr>
+                <td>Santa Rita</td><td class="num"></td>
+                <td>Baloc</td><td class="num"></td>
+                <td>San Agustin</td><td class="num"></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td>Malayantoc</td><td class="num"></td>
+                <td></td><td></td>
+                <td>Concepcion</td><td class="num"></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td>Mabini</td><td class="num"></td>
+                <td></td><td></td>
+                <td>Dolores</td><td class="num"></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td>Casulucan</td><td class="num"></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+            <tr>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+                <td></td><td></td>
+            </tr>
+           
+            <tr class="total-row">
+                <td>TOTAL</td><td class="num"></td>
+                <td></td><td class="num"></td>
+                <td></td><td class="num"></td>
+                <td></td><td ></td>
+                <td></td><td></td>
+            </tr>
+        </table>
+        <table class="summary-table">
+            <tr><td class="summary-label">VIA LINEHAUL</td><td class="num" style="width: 80px;">0</td></tr>
+            <tr><td class="summary-label">BLENDED</td><td class="num">175</td></tr>
+            <tr><td class="summary-label">RIDER'S COUNT</td><td class="num">0</td></tr>
+        </table>
+    </div>
+    </div>
+</main>
+
+<script>
+$(function () {
+    const STATIONS = { SOC: "SOC 4", HUB: "Talavera Hub" };
+    const UPPER_KEY = ["ANDAL ALINO (POB.)", "GULOD","SAMPALOC","MABUHAY", "COLLADO", "CABUBULAONAN", "BANTUG HACIENDA", "SAN PASCUAL", "BAGONG SILANG", "LOMBOY", "SICSICAN MATANDA", "TABACAO", "CASULUCAN ESTE", "TAGAYTAY", "BULAC", "PANTOC BULAC", "BANTUG HAMOG", "BAKAL I", "BAKAL II", "BAKAL III", "MATINGKIS"];
+
+    const extractData = (file) => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = new Uint8Array(e.target.result);
+                const wb = XLSX.read(data, { type: "array" });
+                const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "" });
+                resolve(json.map(r => {
+                    let row = {};
+                    for (let k in r) { row[k.toLowerCase().trim()] = r[k]; }
+                    return {
+                        oid: row["order id"] || "",
+                        sort: String(row["sort code name"] || "").toUpperCase(),
+                        town: String(row["town name"] || "UNKNOWN").toUpperCase(),
+                        stat: String(row["status"] || ""),
+                        curr: String(row["current station"] || "").trim(),
+                        dest: String(row["destination station"] || "").trim()
+                    };
+                }));
+            };
+            reader.readAsArrayBuffer(file);
+        });
+    };
+
+    const processFiles = async (files) => {
+        if (!files.length) return;
+        $("#loadingOverlay").css("display", "flex");
+        
+        let combinedRaw = [];
+        for (let f of files) {
+            $("#loadMsg").text(`Reading: ${f.name}`);
+            const data = await extractData(f);
+            combinedRaw = combinedRaw.concat(data);
+        }
+
+        // Logic Filters
+        const recData = combinedRaw.filter(i => i.stat.includes("LMHub_Received") && i.curr.includes(STATIONS.HUB) && i.dest.includes(STATIONS.HUB));
+        const ingData = combinedRaw.filter(i => i.stat.includes("SOC_LHTransporting") && i.curr.includes(STATIONS.SOC) && i.dest.includes(STATIONS.HUB));
+        const edData  = combinedRaw.filter(i => i.stat.includes("SOC_LHTransported") && i.curr.includes(STATIONS.SOC) && i.dest.includes(STATIONS.HUB));
+
+        const opsPool = [...recData, ...ingData, ...edData];
+        const sdoPool = opsPool.filter(i => i.sort.includes("-SDO-"));
+        const tvrPool = opsPool.filter(i => i.sort.includes("-TVR-") && !i.sort.includes("-SDO-"));
+
+        const renderTbl = (id, list) => {
+            const html = list.map(i => `<tr><td>${i.oid}</td><td>${i.town}</td><td>${i.sort}</td><td>${i.stat}</td><td>${i.curr}</td></tr>`).join('');
+            $(id).find('tbody').html(html || '<tr><td colspan="5" class="text-center py-3">No data loaded</td></tr>');
+        };
+
+        const renderGrid = (id, list, badge) => {
+            let counts = {};
+            list.forEach(i => counts[i.town] = (counts[i.town] || 0) + 1);
+            let sorted = Object.keys(counts).sort((a,b) => counts[b]-counts[a]);
+            $(badge).text(list.length.toLocaleString());
+            $(id).html(sorted.map(t => `<div class="town-item ${counts[t] > 50 ? 'hot' : ''}" data-town="${t}"><span>${t}</span><b>${counts[t]}</b></div>`).join(''));
+        };
+
+        renderTbl("#t-sdo", sdoPool);
+        renderTbl("#t-tvr", tvrPool);
+        renderTbl("#t-rec", recData);
+        renderTbl("#t-ing", ingData);
+        renderTbl("#t-ed", edData);
+
+        renderGrid("#grid-sdo", sdoPool, "#q-sdo-p");
+        renderGrid("#grid-up", tvrPool.filter(i => UPPER_KEY.some(k => i.town.includes(k))), "#q-up-p");
+        renderGrid("#grid-low", tvrPool.filter(i => !UPPER_KEY.some(k => i.town.includes(k))), "#q-low-p");
+
+        $("#c-ops").text(opsPool.length.toLocaleString());
+        $("#c-rec").text(recData.length.toLocaleString());
+        $("#q-rec-t").text(recData.length.toLocaleString());
+        $("#c-ing").text(ingData.length.toLocaleString());
+        $("#q-ing-t").text(ingData.length.toLocaleString());
+        $("#c-ed").text(edData.length.toLocaleString());
+        $("#q-ed-t").text(edData.length.toLocaleString());
+        $("#c-sdo").text(sdoPool.length.toLocaleString());
+        $("#q-sdo-t").text(sdoPool.length.toLocaleString());
+        $("#c-tvr").text(tvrPool.length.toLocaleString());
+        $("#q-tvr-t").text(tvrPool.length.toLocaleString());
+
+        // --- TRIGGER PRINT LOGIC ---
+        runPrintLogic(opsPool);
+
+        $("#loadingOverlay").fadeOut();
+        $("#file").val('');
+    };
+
+    $("#file").on("change", (e) => processFiles(e.target.files));
+    $("#tSearch").on("keyup", function() {
+        let v = $(this).val().toUpperCase();
+        $(".town-item").each(function() { $(this).toggle($(this).data('town').includes(v)); });
+    });
+    runPrintLogic(opsPool);
+});
+
+function runPrintLogic(dataPool) {
+    // 1. Set Today's Date
+    const now = new Date();
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const dateString = `${months[now.getMonth()]} ${now.getDate()} ${now.getFullYear()}`;
+    $("#print-date").text(dateString);
+    $("#sdoprint-date").text(dateString);
+    const counts = {};
+    const clean = (t) => t.toString().toUpperCase()
+        .replace(/\(POB\.\)/g, '').replace(/DISTRICT/g, '')
+        .replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
+
+    // Reset counts
+    $(".print .tvr .num").text("0");
+    $(".print .sdo .num").text("0");
+
+    // Map Excel Data
+    dataPool.forEach(i => { 
+        const key = clean(i.town);
+        counts[key] = (counts[key] || 0) + 1; 
+    });
+
+    // Update Town Table
+    $(".print .tvr td:not(.num)").each(function() {
+        const cell = $(this);
+        const townName = clean(cell.text());
+        if (townName.length > 3 && !cell.parent().hasClass('header-row')) {
+            cell.next('.num').text(counts[townName] || 0);
+        }
+    });
+
+    // Update Town Table
+    $(".print .sdo td:not(.num)").each(function() {
+        const cell = $(this);
+        const townName = clean(cell.text());
+        if (townName.length > 3 && !cell.parent().hasClass('header-row')) {
+            cell.next('.num').text(counts[townName] || 0);
+        }
+    });
+     let sd1Total = 0, sd2Total = 0;
+     $(".sdo .total-row").each(function(index) {
+        const tRow = $(this);
+        let areaSum = 0;
+        for (let i = 1; i < 14; i += 2) {
+            let colSum = 0;
+            tRow.prevUntil('.sub-header').each(function() {
+                colSum += parseInt($(this).find('td').eq(i).text()) || 0;
+            });
+            tRow.find('td').eq(i).text(colSum);
+            areaSum += colSum;
+        }
+        if(index === 0) sd1Total = areaSum; else sd2Total = areaSum;
+    });
+
+    // Column & Area Totals
+    let lowerTotal = 0, upperTotal = 0;
+    $(".tvr .total-row").each(function(index) {
+        const tRow = $(this);
+        let areaSum = 0;
+        for (let i = 1; i < 14; i += 2) {
+            let colSum = 0;
+            tRow.prevUntil('.sub-header').each(function() {
+                colSum += parseInt($(this).find('td').eq(i).text()) || 0;
+            });
+            tRow.find('td').eq(i).text(colSum);
+            areaSum += colSum;
+        }
+        if(index === 0) lowerTotal = areaSum; else upperTotal = areaSum;
+    });
+ const viaLinehaul2 = sd1Total + sd2Total;
+    // Update Area Headers
+    $(".tvr .header-row .header-label").each(function() {
+        if ($(this).text().includes("LOWER")) $(this).text(`LOWER AREA (${lowerTotal})`);
+        if ($(this).text().includes("UPPER")) $(this).text(`UPPER AREA (${upperTotal})`);
+    });
+     // Update Area Headers
+    $(".sdo .header-row .header-label").each(function() {
+        if ($(this).text().includes("SANTO")) $(this).text(`SANTO DOMINGO (${viaLinehaul2})`);
+        //if ($(this).text().includes("BALOC")) $(this).text(`SANTO DOMINGO (${sd2Total})`);
+    });
+
+    // Final Summary Math
+    const viaLinehaul = lowerTotal + upperTotal;
+   
+    const riderCount = Math.round(viaLinehaul / 175);
+     const riderCount2 = Math.round(viaLinehaul2 / 175);
+
+    $(".tvr .summary-table tr:eq(0) .num").text(viaLinehaul);
+    $(".tvr .summary-table tr:eq(1) .num").text(175);
+    $(".tvr .summary-table tr:eq(2) .num").text(riderCount);
+
+     $(".sdo .summary-table tr:eq(0) .num").text(viaLinehaul2);
+    $(".sdo .summary-table tr:eq(1) .num").text(175);
+    $(".sdo .summary-table tr:eq(2) .num").text(riderCount2);
+}
+ async function downloadTemplate() {
+    try {
+        const templatePath = 'TVR-DISPATCHED-AND-UNDISPATCHED TEMPLATE.xlsx';
+        
+        // 1. Generate the date string (e.g., 2-13-2026)
+        const now = new Date();
+        const dateStr = `${now.getMonth() + 1}-${now.getDate()}-${now.getFullYear()}`;
+        const newFileName = `TVR-DISPATCHED-AND-UNDISPATCHED ${dateStr}.xlsx`;
+
+        // 2. Fetch the file from your root folder
+        const response = await fetch(templatePath);
+        if (!response.ok) throw new Error('Template file not found in root folder');
+        
+        const blob = await response.blob();
+
+        // 3. Create a temporary download link
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = newFileName; // This sets the new name
+        
+        // 4. Trigger the download
+        document.body.appendChild(a);
+        a.click();
+        
+        // Cleanup
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+    } catch (err) {
+        console.error(err);
+        alert("Error downloading file: Ensure 'TVR-DISPATCHED-AND-UNDISPATCHED TEMPLATE.xlsx' is in the root folder.");
+    }
+}
+</script>
+</body>
+</html>

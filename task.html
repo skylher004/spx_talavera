@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talavera Hub | Task Assignment</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <style>
+        :root { --primary: #0d6efd; --dark-bg: #1a1c23; --card-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', system-ui, sans-serif; font-size: 0.82rem; color: #333; margin: 0; }
+
+        #loadingOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9); display: none; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 9999; color: white;
+        }
+        .loader { border: 4px solid #333; border-top: 4px solid var(--primary); border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .main-header { background: var(--dark-bg); color: white; padding: 1rem; border-bottom: 3px solid var(--primary); }
+        .stats-card { background: #2d3748; padding: 8px; border-radius: 8px; text-align: center; border-bottom: 6px solid var(--primary); }
+        .stats-val { display: block; font-size: 1.1rem; font-weight: bold; color: #60a5fa; }
+        
+        .table-container { background: white; border-radius: 8px; padding: 15px; box-shadow: var(--card-shadow); margin-bottom: 20px; }
+        .table-fixed { height: 350px; overflow-y: auto; border: 1px solid #eee; }
+        
+        .driver-search { max-width: 250px; border-radius: 20px; font-size: 0.75rem; }
+        .btn-xs { padding: 0.1rem 0.4rem; font-size: 0.7rem; }
+        
+        /* Category styling for Driver Assignment */
+        .category-header { background-color: #f8f9fa !important; font-weight: bold; color: var(--primary); border-left: 4px solid var(--primary); }
+    </style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+    <div class="loader"></div>
+    <div id="loadMsg">Processing Data...</div>
+</div>
+
+<header class="main-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold m-0">TALAVERA HUB | TASK ASSIGNMENT</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary btn-sm px-4 fw-bold" onclick="$('#file').click()">UPLOAD DATA</button>
+                <input id="file" type="file" accept=".csv, .xlsx, .xls" multiple class="d-none" />
+            </div>
+        </div>
+        
+        <div class="row g-2 text-uppercase d-flex justify-content-between">
+            <div class="col"><div class="stats-card">Total SPX<span class="stats-val" id="stat-total-spx">0</span></div></div>
+            <div class="col"><div class="stats-card">Total all<span class="stats-val" id="total-stat">0 / 0</span></div></div>
+            <div class="col"><div class="stats-card">2 Wheels<span class="stats-val" id="stat-2w">0 / 0</span></div></div>
+            <div class="col"><div class="stats-card">3 Wheels<span class="stats-val" id="stat-3w">0 / 0</span></div></div>
+            <div class="col"><div class="stats-card">4 Wheels<span class="stats-val" id="stat-4w">0 / 0</span></div></div>
+            <div class="col"><div class="stats-card">Flexi<span class="stats-val" id="stat-flexi">0 / 0</span></div></div>
+        </div>
+    </div>
+</header>
+
+<main class="container-fluid py-3">
+    <div class="row">
+        <div class="col-lg-3 col-md-4">
+            <div class="table-container">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="m-0 fw-bold">SPX TRACKING</h6>
+                    <button class="btn btn-outline-dark btn-xs" onclick="copySPX()">COPY ALL</button>
+                </div>
+                <div class="table-fixed">
+                    <table class="table table-sm table-hover" id="tableSPX">
+                        <thead class="table-light sticky-top">
+                            <tr><th>SPX Tracking Num</th><th class="text-end">Qty</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-9 col-md-8">
+            <div class="table-container">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="m-0 fw-bold">DRIVER VEHICLE ASSIGNMENT</h6>
+                    <input type="text" id="driverLocalSearch" class="form-control form-control-sm driver-search" placeholder="Search driver name...">
+                </div>
+                <div class="table-fixed">
+                    <table class="table table-sm table-hover" id="tableDrivers">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>Driver Name</th>
+                                <th class="text-center">Total SPX</th>
+                                <th>Assign Vehicle Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="driverListBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 mt-2">
+            <div class="table-container">
+                <h6 class="fw-bold text-center mb-3">DRIVER LIST</h6>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm text-center align-middle" id="tableDistribution">
+                        <thead class="table-dark">
+                            <tr>
+                                <th colspan="2">2 WHEELS</th>
+                                <th colspan="2">3 WHEELS</th>
+                                <th colspan="2">4 WHEELS</th>
+                                <th colspan="2">FLEXI</th>
+                            </tr>
+                            <tr class="table-secondary" style="font-size: 0.7rem;">
+                                <th>Driver</th><th>Qty</th>
+                                <th>Driver</th><th>Qty</th>
+                                <th>Driver</th><th>Qty</th>
+                                <th>Driver</th><th>Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody id="distBody" style="font-size: 0.75rem;"></tbody>
+                        <tfoot class="table-light fw-bold" id="distFoot"></tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+let rawData = [];
+let driverMap = {}; 
+const vehicleTypes = ["3 Wheels", "2 Wheels", "4 Wheels", "Flexi"];
+
+// DEFAULT ASSIGNMENTS
+const defaults = {
+    "2 Wheels": ["EUGENIO ROSARIO PARAIRO", "RODEL CARMELO DE BELEN MEDINO", "LESTER N/A ESPIRITU"],
+    "4 Wheels": [""],
+    "Flexi": ["LEONEILA CABAHIL GARCIA", "MARK KEVEN MAGNO QUILLA", "MARK ANTHONY RAVELA ISON", "CARLO ESPINOZA GALGAO", "MA. THERESA PAULINO TADIAMAN"]
+};
+
+$('#file').on('change', async function(e) {
+    // 1. Show loading overlay
+    $('#loadingOverlay').css('display', 'flex');
+
+    // 2. RESET DATA: Clear existing arrays and objects
+    rawData = []; 
+    driverMap = {}; 
+    
+    // 3. Reset Table UI: Clear the HTML so old data doesn't linger
+    $('#tableSPX tbody').empty();
+    $('#driverListBody').empty();
+    $('#distBody').empty();
+    $('#distFoot').empty();
+
+    // 4. Process new files
+    for(let file of e.target.files) {
+        const data = await extractData(file);
+        rawData = rawData.concat(data);
+    }
+
+    // 5. Initialize and Render
+    autoAssignDrivers();
+    renderAll();
+    
+    // 6. Hide loading overlay
+    $('#loadingOverlay').hide();
+    
+    // 7. Optional: Clear the input value so the same file can be uploaded twice if needed
+    $(this).val('');
+});
+
+const extractData = (file) => {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const data = new Uint8Array(e.target.result);
+            const wb = XLSX.read(data, { type: "array" });
+            const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "" });
+            const normalized = json.map(r => {
+                let row = {};
+                for (let k in r) { row[k.toLowerCase().trim()] = r[k]; }
+                return {
+                    spx: String(row["spx tracking num"] || "").trim().toUpperCase(),
+                    driver: String(row["driver name"] || "UNKNOWN").trim().toUpperCase()
+                };
+            }).filter(r => r.spx !== "");
+            resolve(normalized);
+        };
+        reader.readAsArrayBuffer(file);
+    });
+};
+
+function autoAssignDrivers() {
+    const uniqueDrivers = [...new Set(rawData.map(r => r.driver))];
+    uniqueDrivers.forEach(d => {
+        if (defaults["2 Wheels"].includes(d)) driverMap[d] = "2 Wheels";
+        else if (defaults["4 Wheels"].includes(d)) driverMap[d] = "4 Wheels";
+        else if (defaults["Flexi"].includes(d)) driverMap[d] = "Flexi";
+        else if (!driverMap[d]) driverMap[d] = "3 Wheels";
+    });
+}
+
+function renderAll() {
+    const searchVal = $('#driverLocalSearch').val().toUpperCase();
+    const spxGroup = {};
+    const driverGroup = {};
+    
+    rawData.forEach(item => {
+        spxGroup[item.spx] = (spxGroup[item.spx] || 0) + 1;
+        driverGroup[item.driver] = (driverGroup[item.driver] || 0) + 1;
+    });
+
+    // Render SPX Table
+    let spxHtml = '';
+    Object.keys(spxGroup).sort().forEach(key => {
+        spxHtml += `<tr><td>${key}</td><td class="text-end">${spxGroup[key]}</td></tr>`;
+    });
+    $('#tableSPX tbody').html(spxHtml);
+
+    // --- SORTING LOGIC FOR DRIVER ASSIGNMENT ---
+    // 1. Group drivers by Vehicle Type
+    const categoryGroups = { "2 Wheels": [], "3 Wheels": [], "4 Wheels": [], "Flexi": [] };
+    Object.keys(driverGroup).forEach(name => {
+        const type = driverMap[name] || "3 Wheels";
+        categoryGroups[type].push({ name, count: driverGroup[name] });
+    });
+
+    // 2. Sort categories by number of drivers (Lowest driver count first)
+    const sortedCategories = Object.keys(categoryGroups).sort((a, b) => {
+        const countA = categoryGroups[a].length;
+        const countB = categoryGroups[b].length;
+        if (countA === 0) return 1; 
+        if (countB === 0) return -1;
+        return countA - countB;
+    });
+
+    // 3. Render Driver Assignment Table with categories
+    let drvHtml = '';
+    sortedCategories.forEach(catName => {
+        const drivers = categoryGroups[catName];
+        if (drivers.length > 0) {
+            // Category Divider Row
+            drvHtml += `<tr class="category-header"><td colspan="3" class="small py-1 ps-2">${catName.toUpperCase()} — ${drivers.length} Driver${drivers.length > 1 ? 's' : ''}</td></tr>`;
+            
+            drivers.forEach(d => {
+                if (searchVal && !d.name.includes(searchVal)) return;
+                drvHtml += `
+                    <tr>
+                        <td class="fw-bold ps-4">${d.name}</td>
+                        <td class="text-center">${d.count}</td>
+                        <td>
+                            <select class="form-select form-select-sm" onchange="updateDriverType('${d.name}', this.value)">
+                                ${vehicleTypes.map(t => `<option value="${t}" ${catName === t ? 'selected' : ''}>${t}</option>`).join('')}
+                            </select>
+                        </td>
+                    </tr>`;
+            });
+        }
+    });
+    $('#driverListBody').html(drvHtml);
+
+    renderFleetConsolidation(driverGroup);
+}
+
+function renderFleetConsolidation(driverGroup) {
+    const cats = { "2 Wheels": [], "3 Wheels": [], "4 Wheels": [], "Flexi": [] };
+    Object.keys(driverGroup).forEach(name => {
+        const type = driverMap[name] || "3 Wheels";
+        cats[type].push({ name, count: driverGroup[name] });
+    });
+
+    const maxRows = Math.max(...Object.values(cats).map(a => a.length));
+    let html = '';
+    for(let i = 0; i < maxRows; i++) {
+        html += '<tr>';
+        ["2 Wheels", "3 Wheels", "4 Wheels", "Flexi"].forEach(type => {
+            const d = cats[type][i] || { name: '-', count: '-' };
+            html += `<td class="text-start ps-2">${d.name}</td><td>${d.count}</td>`;
+        });
+        html += '</tr>';
+    }
+    $('#distBody').html(html);
+
+    // --- ADD THIS LOGIC TO CALCULATE TOTAL ALL ---
+    let grandTotalDrivers = 0;
+    let grandTotalQty = 0;
+
+    const totals = {};
+    ["2 Wheels", "3 Wheels", "4 Wheels", "Flexi"].forEach(t => {
+        totals[t] = { drv: cats[t].length, qty: cats[t].reduce((s, c) => s + c.count, 0) };
+        grandTotalDrivers += totals[t].drv;
+        grandTotalQty += totals[t].qty;
+    });
+
+ 
+
+    $('#distFoot').html(`
+        <tr class="table-dark">
+            <td>TOTAL DRIVERS: ${totals["2 Wheels"].drv}</td><td>${totals["2 Wheels"].qty}</td>
+            <td>TOTAL DRIVERS: ${totals["3 Wheels"].drv}</td><td>${totals["3 Wheels"].qty}</td>
+            <td>TOTAL DRIVERS: ${totals["4 Wheels"].drv}</td><td>${totals["4 Wheels"].qty}</td>
+            <td>TOTAL DRIVERS: ${totals["Flexi"].drv}</td><td>${totals["Flexi"].qty}</td>
+        </tr>
+    `);
+
+   
+    $('#stat-total-spx').text(rawData.length);
+    $('#stat-2w').text(`${totals["2 Wheels"].drv} / ${totals["2 Wheels"].qty}`);
+    $('#stat-3w').text(`${totals["3 Wheels"].drv} / ${totals["3 Wheels"].qty}`);
+    $('#stat-4w').text(`${totals["4 Wheels"].drv} / ${totals["4 Wheels"].qty}`);
+    $('#stat-flexi').text(`${totals["Flexi"].drv} / ${totals["Flexi"].qty}`);
+     $('#total-stat').text(`${grandTotalDrivers} / ${grandTotalQty}`);
+}
+
+function updateDriverType(name, type) {
+    driverMap[name] = type;
+    renderAll();
+}
+
+function copySPX() {
+    const numbers = [...new Set(rawData.map(r => r.spx))].join('\n');
+    navigator.clipboard.writeText(numbers).then(() => alert("All SPX Tracking numbers copied to clipboard!"));
+}
+
+$('#driverLocalSearch').on('keyup', renderAll);
+</script>
+
+</body>
+</html>
