@@ -195,6 +195,7 @@ transform: translateX(24px);
         <div class="title">
             Operations Dashboard
         </div>
+        <button class="btn btn-warning btn-sm px-3 fw-bold" onclick="downloadTemplate()">DOWNLOAD</button>
         <div class="theme-toggle">
             <span id="modeLabel">🌙 Dark</span>
             <label class="switch">
@@ -272,14 +273,14 @@ transform: translateX(24px);
 
 });
 
- async function downloadTemplate() {
+async function downloadTemplate() {
     try {
-        const templatePath = 'TVR-DISPATCHED-AND-UNDISPATCHED TEMPLATE.xlsx';
+        const templatePath = 'TVR-DISPATCHED-AND-UNDISPATCHED TEMPLATE.xlsm';
         
         // 1. Generate the date string (e.g., 2-13-2026)
         const now = new Date();
         const dateStr = `${now.getMonth() + 1}-${now.getDate()}-${now.getFullYear()}`;
-        const newFileName = `TVR-DISPATCHED-AND-UNDISPATCHED ${dateStr}.xlsx`;
+        const newFileName = `TVR-DISPATCHED-AND-UNDISPATCHED ${dateStr}.xlsm`;
 
         // 2. Fetch the file from your root folder
         const response = await fetch(templatePath);
@@ -303,7 +304,7 @@ transform: translateX(24px);
 
     } catch (err) {
         console.error(err);
-        alert("Error downloading file: Ensure 'TVR-DISPATCHED-AND-UNDISPATCHED TEMPLATE.xlsx' is in the root folder.");
+        alert("Error downloading file: Ensure 'TVR-DISPATCHED-AND-UNDISPATCHED TEMPLATE.xlsm' is in the root folder.");
     }
 }
 </script>
