@@ -248,30 +248,64 @@ transform: translateX(24px);
             Task
         </a>
 
-        <a href="report.html" target="_blank" class="card">
+        <button onclick="downloadTemplate()" target="_blank" class="card">
             <div class="icon">📄</div>
             Report File
-        </a>
+        </button>
     </div>
 </div>
 
 <script>
-const toggle = document.getElementById("themeToggle");
-const label = document.getElementById("modeLabel");
+    const toggle = document.getElementById("themeToggle");
+    const label = document.getElementById("modeLabel");
 
-toggle.addEventListener("change", function(){
+    toggle.addEventListener("change", function(){
 
-document.body.classList.toggle("dark");
-document.body.classList.toggle("light");
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
 
-if(toggle.checked){
-label.textContent = "☀️ Light";
-}else{
-label.textContent = "🌙 Dark";
+    if(toggle.checked){
+    label.textContent = "☀️ Light";
+    }else{
+    label.textContent = "🌙 Dark";
 }
 
 });
 
+ async function downloadTemplate() {
+    try {
+        const templatePath = 'TVR-DISPATCHED-AND-UNDISPATCHED TEMPLATE.xlsx';
+        
+        // 1. Generate the date string (e.g., 2-13-2026)
+        const now = new Date();
+        const dateStr = `${now.getMonth() + 1}-${now.getDate()}-${now.getFullYear()}`;
+        const newFileName = `TVR-DISPATCHED-AND-UNDISPATCHED ${dateStr}.xlsx`;
+
+        // 2. Fetch the file from your root folder
+        const response = await fetch(templatePath);
+        if (!response.ok) throw new Error('Template file not found in root folder');
+        
+        const blob = await response.blob();
+
+        // 3. Create a temporary download link
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = newFileName; // This sets the new name
+        
+        // 4. Trigger the download
+        document.body.appendChild(a);
+        a.click();
+        
+        // Cleanup
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+    } catch (err) {
+        console.error(err);
+        alert("Error downloading file: Ensure 'TVR-DISPATCHED-AND-UNDISPATCHED TEMPLATE.xlsx' is in the root folder.");
+    }
+}
 </script>
 
 </body>
