@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Talavera Hub Riders </title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #667085;
+      --border: #e4e7ec;
+      --primary: #2563eb;
+      --primary-2: #1d4ed8;
+      --success: #16a34a;
+      --success-2: #15803d;
+      --shadow: 0 10px 30px rgba(23, 32, 51, 0.08);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.10), transparent 25%),
+        radial-gradient(circle at top right, rgba(22, 163, 74, 0.08), transparent 20%),
+        var(--bg);
+      color: var(--text);
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+    .hero {
+      background: linear-gradient(135deg, #111827 0%, #1e3a8a 100%);
+      color: white;
+      border-radius: 24px;
+      
+      padding: 10px 20px;
+      padding-top: 20px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      margin: 0 0 6px;
+      font-size: 32px;
+      line-height: 1.1;
+    }
+    .hero p {
+      margin: 0;
+      color: rgba(255,255,255,0.85);
+      font-size: 15px;
+    }
+    .notice {
+      margin-top: 12px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.85);
+    }
+    .toolbar {
+    
+      align-items: center;
+      margin-bottom: 5px;
+      margin-top: 10px;
+    }
+    .search {
+      position: relative;
+    }
+    .search input {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 8px;
+      padding: 8px 16px 8px 33px;
+      font-size: 15px;
+      outline: none;
+      box-shadow: var(--shadow);
+    }
+    .search svg {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      color: var(--muted);
+    }
+    .pill {
+    padding-left: 10px;
+      box-shadow: var(--shadow);
+      font-size: 14px;
+      color: var(--muted);
+      text-align: center;
+    }
+     .pills {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      min-width: 120px;
+      box-shadow: var(--shadow);
+      font-size: 14px;
+      color: var(--muted);
+      text-align: center;
+    }
+    .showing{
+        margin-top: 10px;
+        font-size: 14px;
+      color: var(--muted);
+      text-align: right;
+    }
+    .statuss {
+      margin-bottom: 14px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: white;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .status {
+        display: none;
+      box-shadow: var(--shadow);
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+    .top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+      margin-bottom: 12px;
+    }
+    .name {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.2;
+    }
+    .id {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .vehicle {
+      white-space: nowrap;
+      background: #eff6ff;
+      color: var(--primary-2);
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .contact {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0 6px;
+      border-top: 1px solid var(--border);
+    }
+    .contact-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .contact-number {
+      font-size: 17px;
+      font-weight: bold;
+      word-break: break-word;
+    }
+    .contact-label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 3px;
+    }
+    .contact-icon-wrap {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      padding:10px;
+      background: #eef2ff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary-2);
+      flex-shrink: 0;
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .btn {
+      border: none;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: white;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .btn svg {
+      width: 16px;
+      height: 16px;
+    }
+    .btn-call { background: var(--primary); }
+    .btn-call:hover { background: var(--primary-2); }
+    .btn-msg { background: var(--success); }
+    .btn-msg:hover { background: var(--success-2); }
+    .empty {
+      display: none;
+      background: white;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      text-align: center;
+      color: var(--muted);
+      box-shadow: var(--shadow);
+    }
+    @media (max-width: 720px) {
+      .toolbar {  }
+      .pill { text-align: left; }
+      .contact {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .actions { width: 100%; }
+      .btn {
+        flex: 1;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>Hub Riders</h1>
+      <div class="" style="display: flex;">
+            <p>Contact List</p> <div class="pill">Total Riders: <strong id="totalCount">0</strong></div>
+      </div>
+      
+      <div id="status" class="status">Loading Excel data...</div>
+       <section class="toolbar">
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="M20 20L17 17"></path>
+        </svg>
+        <input id="searchInput" type="text" placeholder="Search rider name..." />
+      </div>
+     
+      <div class="showing">Showing: <strong id="showingCount">0</strong></div>
+    </section>
+    </section>
+
+    
+
+   
+
+    <section id="cardList" class="list"></section>
+    <div id="emptyState" class="empty">No rider found for your search.</div>
+  </div>
+
+  <script>
+    let riders = [];
+
+    const cardList = document.getElementById("cardList");
+    const searchInput = document.getElementById("searchInput");
+    const totalCount = document.getElementById("totalCount");
+    const showingCount = document.getElementById("showingCount");
+    const emptyState = document.getElementById("emptyState");
+    const statusBox = document.getElementById("status");
+
+    function phoneLink(number) {
+      return String(number || "").replace(/[^\d+]/g, "");
+    }
+
+    function riderCard(rider) {
+      const number = phoneLink(rider["Contact Number"]);
+      return `
+        <article class="card">
+          <div class="top">
+            <div>
+              <h2 class="name">${rider["Driver Name"] || ""}</h2>
+              <div class="id">Driver ID: ${rider["Driver ID"] || ""}</div>
+            </div>
+            <div class="vehicle">${rider["Vehicle Type"] || ""}</div>
+          </div>
+
+          <div class="contact">
+            <div class="contact-left">
+              <div class="contact-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.91a16 16 0 0 0 6.09 6.09l1.46-1.29a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z"/>
+                </svg>
+              </div>
+              <div>
+                <div class="contact-label">Contact Number</div>
+                <div class="contact-number">${rider["Contact Number"] || ""}</div>
+              </div>
+            </div>
+
+            <div class="actions">
+              <a class="btn btn-call" href="tel:${number}" title="Call ${rider["Driver Name"] || ""}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.91a16 16 0 0 0 6.09 6.09l1.46-1.29a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                Call
+              </a>
+              <a class="btn btn-msg" href="sms:${number}" title="Message ${rider["Driver Name"] || ""}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                Message
+              </a>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function render(filterText = "") {
+      const q = filterText.trim().toLowerCase();
+      const filtered = riders.filter(r => String(r["Driver Name"] || "").toLowerCase().includes(q));
+      cardList.innerHTML = filtered.map(riderCard).join("");
+      totalCount.textContent = riders.length;
+      showingCount.textContent = filtered.length;
+      emptyState.style.display = filtered.length ? "none" : "block";
+    }
+
+    function normalizeRows(rows) {
+      return rows
+        .map(row => ({
+          "Driver ID": String(row["Driver ID"] ?? "").trim(),
+          "Driver Name": String(row["Driver Name"] ?? "").trim(),
+          "Contact Number": String(row["Contact Number"] ?? "").trim(),
+          "Vehicle Type": String(row["Vehicle Type"] ?? "").trim()
+        }))
+        .filter(row => row["Driver Name"]);
+    }
+
+    async function loadExcel() {
+      try {
+        const response = await fetch("./talavera_hub_riders.xlsx");
+        if (!response.ok) throw new Error("Excel file not found");
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: "array" });
+        const firstSheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[firstSheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+        riders = normalizeRows(rows);
+        render();
+        statusBox.textContent = "Excel loaded successfully. Edit the XLSX file and refresh this page to see updates.";
+      } catch (error) {
+        console.error(error);
+        statusBox.innerHTML = "Could not load <strong>talavera_hub_riders.xlsx</strong>. Keep the HTML and XLSX in the same folder and open it through a local server or web hosting, not plain file:// mode.";
+      }
+    }
+
+    searchInput.addEventListener("input", (e) => render(e.target.value));
+    loadExcel();
+  </script>
+</body>
+</html>
