@@ -279,12 +279,12 @@ transform: translateX(24px);
 
 async function downloadTemplate() {
     try {
-        const templatePath = 'TVR-DISPATCHED-AND-UNDISPATCHED TEMPLATE.xlsm';
+        const templatePath = 'TVR-DISPATCHED-AND-UNDISPATCHED TEMPLATE.xlsx';
         
         // 1. Generate the date string (e.g., 2-13-2026)
         const now = new Date();
         const dateStr = `${now.getMonth() + 1}-${now.getDate()}-${now.getFullYear()}`;
-        const newFileName = `TVR-DISPATCHED-AND-UNDISPATCHED ${dateStr}.xlsm`;
+        const newFileName = `TVR-DISPATCHED-AND-UNDISPATCHED ${dateStr}.xlsx`;
 
         // 2. Fetch the file from your root folder
         const response = await fetch(templatePath);
