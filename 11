@@ -1,0 +1,122 @@
+(function() {
+    if (document.getElementById('spx-grabber-ui')) document.getElementById('spx-grabber-ui').remove();
+
+    let stopRequested = false;
+
+    const div = document.createElement('div');
+    div.id = 'spx-grabber-ui';
+    div.style = "position:fixed;top:10px;right:10px;z-index:9999;background:#fff;padding:15px;border:2px solid #ee4d2d;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);width:280px;font-family:Arial, sans-serif;";
+    div.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 style="margin:0;color:#ee4d2d;font-size:16px;">SPX Grabber v13 (Blocking)</h3>
+            <button id="grabber-close" style="background:#ddd; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer;">×</button>
+        </div>
+        <textarea id="grabber-input" placeholder="Paste Tracking Numbers..." style="width:100%;height:80px;margin-bottom:10px;font-size:12px;border:1px solid #ddd;padding:5px;box-sizing:border-box;"></textarea>
+        <button id="grabber-start" style="background:#ee4d2d;color:#fff;border:none;padding:10px;width:100%;cursor:pointer;font-weight:bold;border-radius:4px;">START EXTRACTION</button>
+        <button id="grabber-stop" style="display:none; background:#555;color:#fff;border:none;padding:10px;width:100%;cursor:pointer;font-weight:bold;border-radius:4px;margin-top:5px;">STOP & SAVE</button>
+        <div id="grabber-status" style="font-size:12px;margin-top:10px;color:#333;font-weight:bold;">Status: Ready</div>
+    `;
+    document.body.appendChild(div);
+
+    const startBtn = document.getElementById('grabber-start');
+    const stopBtn = document.getElementById('grabber-stop');
+    const status = document.getElementById('grabber-status');
+
+    document.getElementById('grabber-close').onclick = () => div.remove();
+    stopBtn.onclick = () => { stopRequested = true; status.innerText = "Stopping..."; };
+
+    // POWERFUL VERIFIER: Will not return until data is real or max retries hit
+    const waitForData = async (selector, labelName, i, total) => {
+        for (let retry = 0; retry < 25; retry++) {
+            const container = document.querySelector(selector);
+            const dataBox = container?.querySelector('.sensitive-wrap-data');
+            const eye = container?.querySelector('.sensitive-wrap-icon');
+
+            if (dataBox) {
+                let val = dataBox.innerText.trim();
+                let title = dataBox.getAttribute('title');
+
+                // If we find real text, return it
+                if (val !== "" && !val.includes("*")) return val.replace(/,/g, " ");
+                if (title && !title.includes("*") && title.length > 3) return title.replace(/,/g, " ");
+
+                // Otherwise, keep clicking the eye
+                status.innerHTML = `[${i+1}/${total}] <span style="color:orange;">NEED DATA: ${labelName} (Try ${retry+1}/25)</span>`;
+                if (eye) eye.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+            }
+            await new Promise(r => setTimeout(r, 800));
+        }
+        return "N/A - FAILED";
+    };
+
+    startBtn.onclick = async () => {
+        const input = document.getElementById('grabber-input').value;
+        const codes = input.split('\n').map(c => c.trim()).filter(c => c !== "");
+        if (codes.length === 0) return alert("Paste numbers!");
+
+        stopRequested = false;
+        startBtn.style.display = 'none';
+        stopBtn.style.display = 'block';
+        
+        let csvRows = [["Tracking Number", "Receiver Name", "Town", "Address", "SKU Name", "Qty", "Weight", "H", "W", "L"]];
+
+        for (let i = 0; i < codes.length; i++) {
+            if (stopRequested) break;
+            const code = codes[i];
+            
+            status.innerHTML = `[${i+1}/${codes.length}] Loading <b>${code}</b>...`;
+            window.location.hash = `#/orderDetail/${code}/sender_info`;
+
+            // Wait for Page Load (Critical Check)
+            let ready = false;
+            for(let p=0; p<30; p++) {
+                if(document.querySelector('div[data-for="buyer_name"]')) { ready = true; break; }
+                await new Promise(r => setTimeout(r, 500));
+            }
+
+            if(!ready) {
+                csvRows.push([code, "LOAD ERROR", "", "", "", "", "", "", "", ""]);
+                continue;
+            }
+
+            // EXTRACT WITH BLOCKING VERIFICATION
+            const name = await waitForData('div[data-for="buyer_name"]', "Name", i, codes.length);
+            const town = await waitForData('div[data-for="buyer_addr_town"]', "Town", i, codes.length);
+            const addr = await waitForData('div[data-for="buyer_addr"]', "Address", i, codes.length);
+
+            // TABLE EXTRACTION
+            const tableRows = document.querySelectorAll('.ssc-table-row');
+            if (tableRows.length === 0) {
+                csvRows.push([code, name, town, addr, "No SKU", "", "", "", "", ""]);
+            } else {
+                for (let tr of tableRows) {
+                    const cells = tr.querySelectorAll('td');
+                    if (cells.length >= 9) {
+                        const skuBoxContainer = cells[2]; // Cell containing the SKU Name sensitive wrap
+                        const skuVal = await waitForData('.ssc-table-row', "SKU", i, codes.length); // Adjusted slightly for table
+                        
+                        csvRows.push([
+                            code, name, town, addr, skuVal, 
+                            cells[4].innerText.trim(), 
+                            cells[5].innerText.trim(), 
+                            cells[6].innerText.trim(), 
+                            cells[7].innerText.trim(), 
+                            cells[8].innerText.trim()
+                        ]);
+                    }
+                }
+            }
+        }
+
+        const csvContent = csvRows.map(e => e.join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `SPX_Master_v13.csv`;
+        link.click();
+
+        startBtn.style.display = 'block';
+        stopBtn.style.display = 'none';
+        status.innerText = "Complete!";
+    };
+})();

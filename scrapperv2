@@ -1,0 +1,113 @@
+(function() {
+    if (document.getElementById('spx-grabber-ui')) document.getElementById('spx-grabber-ui').remove();
+
+    let stopRequested = false;
+
+    const div = document.createElement('div');
+    div.id = 'spx-grabber-ui';
+    div.style = "position:fixed;top:10px;right:10px;z-index:9999;background:#fff;padding:15px;border:2px solid #ee4d2d;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);width:280px;font-family:Arial, sans-serif;";
+    div.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 style="margin:0;color:#ee4d2d;font-size:16px;">SPX Grabber v9 (Master)</h3>
+            <button id="grabber-close" style="background:#ddd; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer;">×</button>
+        </div>
+        <textarea id="grabber-input" placeholder="Paste Tracking Numbers..." style="width:100%;height:80px;margin-bottom:10px;font-size:12px;border:1px solid #ddd;"></textarea>
+        <button id="grabber-start" style="background:#ee4d2d;color:#fff;border:none;padding:10px;width:100%;cursor:pointer;font-weight:bold;border-radius:4px;">START EXTRACTION</button>
+        <button id="grabber-stop" style="display:none; background:#555;color:#fff;border:none;padding:10px;width:100%;cursor:pointer;font-weight:bold;border-radius:4px;margin-top:5px;">STOP & SAVE</button>
+        <div id="grabber-status" style="font-size:12px;margin-top:10px;color:#333;">Status: Ready</div>
+    `;
+    document.body.appendChild(div);
+
+    const startBtn = document.getElementById('grabber-start');
+    const stopBtn = document.getElementById('grabber-stop');
+    const status = document.getElementById('grabber-status');
+
+    document.getElementById('grabber-close').onclick = () => div.remove();
+    stopBtn.onclick = () => { stopRequested = true; status.innerText = "Stopping..."; };
+
+    startBtn.onclick = async () => {
+        const input = document.getElementById('grabber-input').value;
+        const codes = input.split('\n').map(c => c.trim()).filter(c => c !== "");
+        if (codes.length === 0) return alert("Paste tracking numbers!");
+
+        stopRequested = false;
+        startBtn.style.display = 'none';
+        stopBtn.style.display = 'block';
+        
+        let csvRows = [["Tracking Number", "Receiver Name","Town", "Address",  "SKU Name", "Qty", "Weight(kg)", "H(cm)", "W(cm)", "L(cm)"]];
+
+        for (let i = 0; i < codes.length; i++) {
+            if (stopRequested) break;
+            const code = codes[i];
+            
+            status.innerHTML = `[${i+1}/${codes.length}] Loading <b>${code}</b>...`;
+            window.location.hash = `#/orderDetail/${code}/sender_info`;
+
+            await new Promise(r => setTimeout(r, 2500));
+
+            // Force click all eye icons on the page
+            document.querySelectorAll('.sensitive-wrap-icon').forEach(icon => {
+                icon.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+            });
+
+            const unmaskAndVerify = async (dataBox) => {
+                if (!dataBox) return "N/A";
+                // Quick check: see if the title already has the full name (hidden in HTML)
+                let titleVal = dataBox.getAttribute('title');
+                if (titleVal && !titleVal.includes("*") && titleVal.length > 4) return titleVal.replace(/,/g, " ");
+
+                for (let retry = 0; retry < 8; retry++) {
+                    let val = dataBox.innerText.trim();
+                    if (!val.includes("*") && val !== "") return val.replace(/,/g, " ");
+                    const icon = dataBox.parentElement.querySelector('.sensitive-wrap-icon');
+                    if (icon) icon.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+                    await new Promise(r => setTimeout(r, 600));
+                }
+                return dataBox.innerText.trim().replace(/,/g, " ");
+            };
+
+            const getReceiverField = async (labelText) => {
+                const labels = Array.from(document.querySelectorAll('.ssc-form-item-label'));
+                const label = labels.find(l => l.innerText.toLowerCase().includes(labelText.toLowerCase()));
+                const box = label?.parentElement?.querySelector('.sensitive-wrap-data');
+                return await unmaskAndVerify(box);
+            };
+
+            const name = await getReceiverField("Receiver Name");
+            const town = await getReceiverField("Town");
+            const addr = await getReceiverField("Receiver Addr");
+            
+
+            const tableRows = document.querySelectorAll('.ssc-table-row');
+            for (let tr of tableRows) {
+                const cells = tr.querySelectorAll('td');
+                if (cells.length >= 9) {
+                    const skuBox = cells[2].querySelector('.sensitive-wrap-data'); // SKU Name
+                    
+                    const skuVal = await unmaskAndVerify(skuBox);
+                    const qty = cells[4].innerText.trim();
+                    const weight = cells[5].innerText.trim();
+                    const h = cells[6].innerText.trim();
+                    const w = cells[7].innerText.trim();
+                    const l = cells[8].innerText.trim();
+
+                    csvRows.push([
+                        code, name, town, addr, 
+                        skuVal, qty, weight, h, w, l
+                    ]);
+                }
+            }
+        }
+
+        const csvContent = csvRows.map(e => e.join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `SPX_Master_Data_${Date.now()}.csv`;
+        link.click();
+
+        startBtn.style.display = 'block';
+        stopBtn.style.display = 'none';
+        status.innerText = "Complete!";
+    };
+})();
