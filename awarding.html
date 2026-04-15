@@ -124,7 +124,7 @@
             const m = CONFIG.months[mIdx];
             globalData[m] = [];
             for (let d = 31; d >= 1; d--) {
-                const fileName = `RIDER_S PERFORMANCE ${m} ${d} ${CONFIG.year}.xlsx`;
+                const fileName = `RIDER_S_PERFORMANCE_${m}_${d}_${CONFIG.year}.xlsx`;
                 try {
                     const res = await fetch(`${CONFIG.historyFolder}/${fileName}`);
                     if (!res.ok) continue;
