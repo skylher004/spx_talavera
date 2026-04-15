@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rider Awarding & Transparency Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root { --bg: #0d1117; --card: #161b22; --accent: #58a6ff; --gold: #f2cc60; --lower: #3fb950; --upper: #f85149; --sd: #a371f7; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: #c9d1d9; margin: 0; padding: 10px; }
+        .container { max-width: 1400px; margin: auto; }
+        
+        .header { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; }
+        .latest-badge { padding: 8px 20px; background: rgba(88, 166, 255, 0.1); border: 1px solid var(--accent); border-radius: 30px; color: var(--accent); font-weight: 800; font-size: 0.9rem; }
+
+        .section-title { font-size: 1rem; font-weight: bold; margin: 25px 0 10px; color: var(--accent); text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
+        .dash-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 1024px) { .dash-grid { grid-template-columns: repeat(3, 1fr); } }
+
+        .area-col { background: var(--card); border-radius: 16px; padding: 15px; border-top: 5px solid #30363d; display: flex; flex-direction: column; }
+        
+        .rank1-card { background: linear-gradient(145deg, #1c2128, #0d1117); border: 1px solid rgba(242, 204, 96, 0.4); border-radius: 15px; padding: 20px; text-align: center; margin-bottom: 15px; position: relative; }
+        .rank1-pct { font-size: 2.8rem; font-weight: 900; color: var(--gold); }
+        .rank1-name { font-weight: bold; color: #fff; margin-top: 5px; text-transform: uppercase; font-size: 1.1rem; }
+        .rank1-stats { font-size: 0.75rem; color: #8b949e; margin-top: 8px; line-height: 1.5; }
+        .rts-highlight { color: #f85149; font-weight: bold; background: rgba(248, 81, 73, 0.1); padding: 2px 6px; border-radius: 4px; }
+
+        .rider-row { display: grid; grid-template-columns: 25px 1fr 65px; align-items: center; padding: 10px; background: #0d1117; border-radius: 10px; margin-bottom: 6px; font-size: 0.85rem; }
+        .stat-line { font-size: 0.7rem; color: #8b949e; margin-top: 3px; }
+        .pct-box { text-align: right; font-weight: bold; color: var(--accent); }
+
+        .compare-btn { margin-top: auto; background: #21262d; border: 1px solid #30363d; color: var(--accent); padding: 10px; border-radius: 10px; cursor: pointer; font-size: 0.75rem; transition: 0.2s; font-weight: bold; }
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; backdrop-filter: blur(4px); }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 95%; max-width: 550px; max-height: 80vh; background: #161b22; border: 1px solid #30363d; border-radius: 15px; z-index: 1001; padding: 20px; overflow-y: auto; }
+        .chip-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; margin: 15px 0; }
+        .chip { padding: 6px 15px; background: #21262d; border-radius: 20px; font-size: 0.75rem; cursor: pointer; white-space: nowrap; border: 1px solid #30363d; }
+        .chip.active { background: var(--accent); color: white; border-color: var(--accent); }
+    </style>
+</head>
+<body>
+
+<div class="modal-overlay" id="overlay" onclick="closeModal()"></div>
+<div class="modal" id="rankingModal">
+    <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
+        <h3 id="modalTitle" style="margin:0; color:var(--gold);">Full Rankings</h3>
+        <i class="fas fa-times" style="cursor:pointer" onclick="closeModal()"></i>
+    </div>
+    <div id="modalBody"></div>
+</div>
+
+<div class="container">
+    <div class="header">
+        <div id="latestDateLabel" class="latest-badge">LOADING HISTORY...</div>
+        <label style="font-size:0.8rem; cursor:pointer;"><input type="checkbox" id="flexiCheck" checked onchange="refreshAll()"> INCLUDE FLEXI</label>
+    </div>
+
+    <div class="section-title"><i class="fas fa-calendar-day"></i> Latest Day Performance</div>
+    <div class="dash-grid">
+        <div class="area-col" style="border-color: var(--lower);"><div id="lDay"></div><button class="compare-btn" onclick="openFullRankings('lDay')">Full Lower</button></div>
+        <div class="area-col" style="border-color: var(--upper);"><div id="uDay"></div><button class="compare-btn" onclick="openFullRankings('uDay')">Full Upper</button></div>
+        <div class="area-col" style="border-color: var(--sd);"><div id="sDay"></div><button class="compare-btn" onclick="openFullRankings('sDay')">Full SD</button></div>
+    </div>
+
+    <div class="section-title"><i class="fas fa-calendar-alt"></i> Monthly Top 5 (Active Month)</div>
+    <div class="dash-grid">
+        <div class="area-col" style="border-color: var(--lower);"><div id="lMonth"></div><button class="compare-btn" onclick="openFullRankings('lMonth')">Full Monthly</button></div>
+        <div class="area-col" style="border-color: var(--upper);"><div id="uMonth"></div><button class="compare-btn" onclick="openFullRankings('uMonth')">Full Monthly</button></div>
+        <div class="area-col" style="border-color: var(--sd);"><div id="sMonth"></div><button class="compare-btn" onclick="openFullRankings('sMonth')">Full Monthly</button></div>
+    </div>
+
+    <div class="section-title" style="color:var(--gold);"><i class="fas fa-crown"></i> Executive Hall of Fame</div>
+    <div class="chip-scroll" id="monthChips"></div>
+    <div class="dash-grid">
+        <div class="area-col" style="border-color: var(--lower);"><div id="lExec"></div><button class="compare-btn" onclick="openFullRankings('lExec')">Full Exec</button></div>
+        <div class="area-col" style="border-color: var(--upper);"><div id="uExec"></div><button class="compare-btn" onclick="openFullRankings('uExec')">Full Exec</button></div>
+        <div class="area-col" style="border-color: var(--sd);"><div id="sExec"></div><button class="compare-btn" onclick="openFullRankings('sExec')">Full Exec</button></div>
+    </div>
+</div>
+
+<script>
+    const CONFIG = {
+        months: ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"],
+        year: 2026,
+        historyFolder: 'performance/history', 
+        filterFile: 'FILTER RIDER.xlsx'
+    };
+
+    let riderMap = {}; 
+    let globalData = {}; 
+    let latestDayRows = [];
+    let latestMonthName = "";
+    let currentRankings = {};
+
+    async function init() {
+        await loadFilters();
+        setupChips();
+        await scanHistory();
+        refreshAll();
+    }
+
+    async function loadFilters() {
+        const res = await fetch(CONFIG.filterFile);
+        const wb = XLSX.read(await res.arrayBuffer());
+        XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]).forEach(r => {
+            if(r.DRIVER) riderMap[r.DRIVER.trim().toUpperCase()] = (r.AREA || 'LOWER').toUpperCase();
+        });
+    }
+
+    function setupChips() {
+        const container = document.getElementById('monthChips');
+        CONFIG.months.forEach((m, i) => {
+            const span = document.createElement('span');
+            span.className = 'chip' + (i <= new Date().getMonth() ? ' active' : '');
+            span.innerText = m;
+            span.onclick = () => { span.classList.toggle('active'); refreshAll(); };
+            container.appendChild(span);
+        });
+    }
+
+    async function scanHistory() {
+        for (let mIdx = CONFIG.months.length - 1; mIdx >= 0; mIdx--) {
+            const m = CONFIG.months[mIdx];
+            globalData[m] = [];
+            for (let d = 31; d >= 1; d--) {
+                const fileName = `RIDER_S PERFORMANCE ${m} ${d} ${CONFIG.year}.xlsx`;
+                try {
+                    const res = await fetch(`${CONFIG.historyFolder}/${fileName}`);
+                    if (!res.ok) continue;
+                    const wb = XLSX.read(await res.arrayBuffer());
+                    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {range: 2});
+                    if (rows.length > 0) {
+                        if (latestDayRows.length === 0) {
+                            latestDayRows = rows;
+                            latestMonthName = m;
+                            document.getElementById('latestDateLabel').innerText = `LATEST: ${m} ${d}`;
+                        }
+                        globalData[m].push({ data: rows });
+                    }
+                } catch(e) {}
+            }
+        }
+    }
+
+    function renderSection(id, dataPool, area, flexi) {
+        const container = document.getElementById(id);
+        let summary = {};
+        dataPool.forEach(day => {
+            day.data.forEach(r => {
+                const name = (r.NAME || "").trim().toUpperCase();
+                if (riderMap[name] !== area) return;
+                if (!flexi && (r["RIDER'S TYPE"] || "").includes("FLEXI")) return;
+                if (!summary[name]) summary[name] = { name: r.NAME, assigned: 0, delivered: 0, attendance: 0 };
+                summary[name].assigned += (r.ASSIGNED || 0);
+                summary[name].delivered += (r.DELIVERED || 0);
+                summary[name].attendance += 1;
+            });
+        });
+
+        const list = Object.values(summary)
+            .map(r => ({ ...r, pct: r.assigned > 0 ? (r.delivered / r.assigned) * 100 : 0, rts: r.assigned - r.delivered }))
+            .sort((a,b) => b.pct - a.pct || b.attendance - a.attendance || b.delivered - a.delivered);
+
+        currentRankings[id] = list; 
+        const display = list.slice(0, 5);
+        if (display.length === 0) return container.innerHTML = "<div style='opacity:0.2; text-align:center;'>No Data</div>";
+
+        const top = display[0];
+        let html = `
+            <div class="rank1-card">
+                <div class="rank1-pct">${top.pct.toFixed(1)}%</div>
+                <div class="rank1-name">${top.name}</div>
+                <div class="rank1-stats">Delivered: <b>${top.delivered}</b> | Attendance: <b>${top.attendance}</b><br><span class="rts-highlight">RTS: ${top.rts}</span></div>
+            </div>`;
+
+        display.slice(1).forEach((r, i) => {
+            html += `<div class="rider-row">
+                <div style="opacity:0.3; font-weight:bold;">${i+2}</div>
+                <div><div style="font-weight:bold">${r.name}</div><div class="stat-line">Del: ${r.delivered} | Att: ${r.attendance} | <span style="color:#f85149">RTS: ${r.rts}</span></div></div>
+                <div class="pct-box">${r.pct.toFixed(1)}%</div>
+            </div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function refreshAll() {
+        const flexi = document.getElementById('flexiCheck').checked;
+        const activeMs = Array.from(document.querySelectorAll('.chip.active')).map(c => c.innerText);
+
+        // Daily
+        renderSection('lDay', [{data: latestDayRows}], 'LOWER', flexi);
+        renderSection('uDay', [{data: latestDayRows}], 'UPPER', flexi);
+        renderSection('sDay', [{data: latestDayRows}], 'SD', flexi);
+
+        // Monthly (Fixed: Uses latestMonthName found during scan)
+        renderSection('lMonth', globalData[latestMonthName] || [], 'LOWER', flexi);
+        renderSection('uMonth', globalData[latestMonthName] || [], 'UPPER', flexi);
+        renderSection('sMonth', globalData[latestMonthName] || [], 'SD', flexi);
+
+        // Executive
+        let execData = [];
+        activeMs.forEach(m => execData.push(...(globalData[m] || [])));
+        renderSection('lExec', execData, 'LOWER', flexi);
+        renderSection('uExec', execData, 'UPPER', flexi);
+        renderSection('sExec', execData, 'SD', flexi);
+    }
+
+    function openFullRankings(id) {
+        const list = currentRankings[id];
+        const body = document.getElementById('modalBody');
+        document.getElementById('modalTitle').innerText = "Full Rankings Details";
+        let html = `<div style="display:grid; grid-template-columns:30px 1fr 50px 40px 40px; font-size:0.7rem; color:#8b949e; padding:10px; border-bottom:1px solid #333;"><span>#</span><span>RIDER</span><span>RATE</span><span>DEL</span><span>RTS</span></div>`;
+        list.forEach((r, i) => {
+            html += `<div style="display:grid; grid-template-columns:30px 1fr 50px 40px 40px; align-items:center; padding:10px; background:#0d1117; border-radius:8px; margin-bottom:5px; font-size:0.8rem;">
+                <span style="opacity:0.5">${i+1}</span><span style="font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${r.name}</span><span style="color:var(--accent); font-weight:bold;">${r.pct.toFixed(0)}%</span><span>${r.delivered}</span><span style="color:#f85149; font-weight:bold;">${r.rts}</span>
+            </div>`;
+        });
+        body.innerHTML = html;
+        document.getElementById('overlay').style.display = 'block';
+        document.getElementById('rankingModal').style.display = 'block';
+    }
+
+    function closeModal() { document.getElementById('overlay').style.display = 'none'; document.getElementById('rankingModal').style.display = 'none'; }
+
+    init();
+</script>
+</body>
+</html>
