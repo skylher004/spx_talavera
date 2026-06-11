@@ -603,7 +603,7 @@ $(function () {
         const recData = combinedRaw.filter(i => i.stat.includes("LMHub_Received") && i.curr.includes(STATIONS.HUB) && i.dest.includes(STATIONS.HUB));
         const ingData = combinedRaw.filter(i => i.stat.includes("SOC_LHTransporting") && i.curr.includes(STATIONS.SOC) && i.dest.includes(STATIONS.HUB));
         const edData  = combinedRaw.filter(i => i.stat.includes("SOC_LHTransported") && i.curr.includes(STATIONS.SOC) && i.dest.includes(STATIONS.HUB));
-        const socData  = combinedRaw.filter(i => i.stat.includes("SOC_LHPacked") && i.curr.includes(STATIONS.SOC) && i.dest.includes(STATIONS.HUB));
+        const socData  = combinedRaw.filter(i => i.stat.includes("SOC_LHPacking") && i.curr.includes(STATIONS.SOC) && i.dest.includes(STATIONS.HUB));
 
         const opsPool = [...recData, ...ingData, ...edData, ...socData];
         const sdoPool = opsPool.filter(i => i.sort.includes("-SDO-"));
