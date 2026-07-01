@@ -215,7 +215,7 @@
     </div>
    <div class="table-card" style="border-top-color: #0dcaf0;">
         <div class="d-flex justify-content-between align-items-center"><span class="fw-bold text-info">STATUS: SOC_PACKED</span><span id="q-soc-t" class="count-badge bg-info">0</span></div>
-        <div class="scroll-area"><table id="t-soc" class="table table-sm table-hover"><thead><tr><th>Order ID</th><th>Town</th><th>Sort</th><th>Destination</th><th>Current</th></tr></thead><tbody></tbody></table></div>
+        <div class="scroll-area"><table id="t-socS" class="table table-sm table-hover"><thead><tr><th>Order ID</th><th>Town</th><th>Sort</th><th>Destination</th><th>Current</th></tr></thead><tbody></tbody></table></div>
     </div>
  
     <div class="print">
@@ -634,7 +634,7 @@ $(function () {
         renderTbl("#t-ing", ingData);
         renderTbl("#t-ed", edData);
         renderTbl("#t-soc", socData);
-        renderTbl("#t-socs", socData);
+        renderTbl("#t-socs", socDatap);
 
         renderGrid("#grid-sdo", sdoPool, "#q-sdo-p");
         renderGrid("#grid-up", tvrPool.filter(i => UPPER_KEY.some(k => i.town.includes(k))), "#q-up-p");
@@ -653,7 +653,7 @@ $(function () {
         $("#q-tvr-t").text(tvrPool.length.toLocaleString());
         $("#c-soc").text(socData.length.toLocaleString());
         $("#q-soc-t").text(socData.length.toLocaleString());
-        $("#q-soc-ts").text(socData.length.toLocaleString());
+        $("#q-soc-ts").text(socDatap.length.toLocaleString());
 
         // --- TRIGGER PRINT LOGIC ---
         runPrintLogic(opsPool);
