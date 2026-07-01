@@ -161,8 +161,8 @@
             <div class="stat-card border-success"><b>LMHub_Received</b><span id="c-rec" class="text-success">0</span></div>
             <div class="stat-card border-warning"><b>SOC_LHTransporting</b><span id="c-ing" class="text-warning">0</span></div>
             <div class="stat-card border-info"><b>SOC_LHTransported</b><span id="c-ed" class="text-info">0</span></div>
-            <div class="stat-card border-info"><b>SOC_PACKING</b><span id="c-socs" class="text-info">0</span></div>
-            <div class="stat-card border-info"><b>SOC_PACKED</b><span id="c-soc" class="text-info">0</span></div>
+            <div class="stat-card border-info"><b>SOC_PACKED</b><span id="c-socs" class="text-info">0</span></div>
+            <div class="stat-card border-info"><b>SOC_PACKING</b><span id="c-soc" class="text-info">0</span></div>
             <div class="stat-card border-primary"><b>SD All</b><span id="c-sdo" class="text-primary">0</span></div>
             <div class="stat-card border-dark"><b>TALAVERA All</b><span id="c-tvr" class="text-dark">0</span></div>
         </div>
@@ -608,8 +608,8 @@ $(function () {
         const recData = combinedRaw.filter(i => i.stat.includes("LMHub_Received") && i.curr.includes(STATIONS.HUB) && i.dest.includes(STATIONS.HUB));
         const ingData = combinedRaw.filter(i => i.stat.includes("SOC_LHTransporting") && i.curr.includes(STATIONS.SOC) && i.dest.includes(STATIONS.HUB));
         const edData  = combinedRaw.filter(i => i.stat.includes("SOC_LHTransported") && i.curr.includes(STATIONS.SOC) && i.dest.includes(STATIONS.HUB));
-        const socData  = combinedRaw.filter(i => i.stat.includes("SOC_Packed") && i.curr.includes(STATIONS.SOC) && i.dest.includes(STATIONS.HUB));
-         const socDatap  = combinedRaw.filter(i => i.stat.includes("SOC_Packing") && i.curr.includes(STATIONS.SOC) && i.dest.includes(STATIONS.HUB));
+        const socData  = combinedRaw.filter(i => i.stat.includes("SOC_Packing") && i.curr.includes(STATIONS.SOC) && i.dest.includes(STATIONS.HUB));
+         const socDatap  = combinedRaw.filter(i => i.stat.includes("SOC_Packed") && i.curr.includes(STATIONS.SOC) && i.dest.includes(STATIONS.HUB));
 
         const opsPool = [...recData, ...ingData, ...edData, ...socData];
         const sdoPool = opsPool.filter(i => i.sort.includes("-SDO-"));
