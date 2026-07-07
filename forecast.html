@@ -563,7 +563,6 @@
     </div>
     </div>
 </main>
-
 <script>
 $(function () {
     const STATIONS = { SOC: "SOC 6", HUB: "Talavera Hub" };
@@ -608,9 +607,8 @@ $(function () {
         const recData = combinedRaw.filter(i => i.stat.includes("LMHub_Received") && i.dest.includes(STATIONS.HUB) && i.curr.includes(STATIONS.HUB));
         const ingData = combinedRaw.filter(i => i.stat.includes("SOC_LHTransporting") && i.dest.includes(STATIONS.HUB) && i.curr.includes(STATIONS.SOC));
         const edData  = combinedRaw.filter(i => i.stat.includes("SOC_LHTransported") && i.dest.includes(STATIONS.HUB)  && i.curr.includes(STATIONS.SOC));
-     // added
         const socData  = combinedRaw.filter(i => i.stat.includes("SOC_LHPacking")  && i.dest.includes(STATIONS.HUB) && i.curr.includes(STATIONS.SOC));
-         const socDatap  = combinedRaw.filter(i => i.stat.includes("SOC_LHPacked") && i.dest.includes(STATIONS.HUB) && i.curr.includes(STATIONS.SOC) );
+        const socDatap  = combinedRaw.filter(i => i.stat.includes("SOC_LHPacked") && i.dest.includes(STATIONS.HUB) && i.curr.includes(STATIONS.SOC) );
 
         const opsPool = [...recData, ...ingData, ...edData, ...socData, ...socDatap];
         const sdoPool = opsPool.filter(i => i.sort.includes("-SDO-"));
@@ -664,14 +662,21 @@ $(function () {
     };
 
     $("#file").on("change", (e) => processFiles(e.target.files));
+    
+    // Updated town filtering safely
     $("#tSearch").on("keyup", function() {
-        let v = $(this).val().toUpperCase();
-        $(".town-item").each(function() { $(this).toggle($(this).data('town').includes(v)); });
+        let v = $(this).val().toUpperCase().trim();
+        $(".town-item").each(function() { 
+            let townAttr = $(this).data('town');
+            let match = townAttr ? String(townAttr).includes(v) : false;
+            $(this).toggle(match || v === ""); 
+        });
     });
-    runPrintLogic(opsPool);
 });
 
 function runPrintLogic(dataPool) {
+    if (!dataPool || !dataPool.length) return;
+
     // 1. Set Today's Date
     const now = new Date();
     const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -679,9 +684,9 @@ function runPrintLogic(dataPool) {
     $("#print-date").text(dateString);
     $("#sdoprint-date").text(dateString);
     const counts = {};
-    const clean = (t) => t.toString().toUpperCase()
+    const clean = (t) => t ? t.toString().toUpperCase()
         .replace(/\(POB\.\)/g, '').replace(/DISTRICT/g, '')
-        .replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
+        .replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim() : "";
 
     // Reset counts
     $(".print .tvr .num").text("0");
@@ -690,7 +695,7 @@ function runPrintLogic(dataPool) {
     // Map Excel Data
     dataPool.forEach(i => { 
         const key = clean(i.town);
-        counts[key] = (counts[key] || 0) + 1; 
+        if(key) counts[key] = (counts[key] || 0) + 1; 
     });
 
     // Update Town Table
@@ -710,8 +715,9 @@ function runPrintLogic(dataPool) {
             cell.next('.num').text(counts[townName] || 0);
         }
     });
-     let sd1Total = 0, sd2Total = 0;
-     $(".sdo .total-row").each(function(index) {
+    
+    let sd1Total = 0, sd2Total = 0;
+    $(".sdo .total-row").each(function(index) {
         const tRow = $(this);
         let areaSum = 0;
         for (let i = 1; i < 14; i += 2) {
@@ -740,66 +746,62 @@ function runPrintLogic(dataPool) {
         }
         if(index === 0) lowerTotal = areaSum; else upperTotal = areaSum;
     });
- const viaLinehaul2 = sd1Total + sd2Total;
+    
+    const viaLinehaul2 = sd1Total + sd2Total;
+    
     // Update Area Headers
     $(".tvr .header-row .header-label").each(function() {
         if ($(this).text().includes("LOWER")) $(this).text(`LOWER AREA (${lowerTotal})`);
         if ($(this).text().includes("UPPER")) $(this).text(`UPPER AREA (${upperTotal})`);
     });
-     // Update Area Headers
+    
+    // Update Area Headers
     $(".sdo .header-row .header-label").each(function() {
         if ($(this).text().includes("SANTO")) $(this).text(`SANTO DOMINGO (${viaLinehaul2})`);
-        //if ($(this).text().includes("BALOC")) $(this).text(`SANTO DOMINGO (${sd2Total})`);
     });
 
     // Final Summary Math
     const viaLinehaul = lowerTotal + upperTotal;
    
     const riderCount = Math.round(viaLinehaul / 175);
-     const riderCount2 = Math.round(viaLinehaul2 / 175);
+    const riderCount2 = Math.round(viaLinehaul2 / 175);
 
     $(".tvr .summary-table tr:eq(0) .num").text(viaLinehaul);
     $(".tvr .summary-table tr:eq(1) .num").text(175);
     $(".tvr .summary-table tr:eq(2) .num").text(riderCount);
 
-     $(".sdo .summary-table tr:eq(0) .num").text(viaLinehaul2);
+    $(".sdo .summary-table tr:eq(0) .num").text(viaLinehaul2);
     $(".sdo .summary-table tr:eq(1) .num").text(175);
     $(".sdo .summary-table tr:eq(2) .num").text(riderCount2);
 }
- async function downloadTemplate() {
+
+async function downloadTemplate() {
     try {
         const templatePath = 'TVR-DISPATCHED-AND-UNDISPATCHED TEMPLATE.xlsx';
-        
-        // 1. Generate the date string (e.g., 2-13-2026)
         const now = new Date();
         const dateStr = `${now.getMonth() + 1}-${now.getDate()}-${now.getFullYear()}`;
         const newFileName = `TVR-DISPATCHED-AND-UNDISPATCHED ${dateStr}.xlsx`;
 
-        // 2. Fetch the file from your root folder
         const response = await fetch(templatePath);
         if (!response.ok) throw new Error('Template file not found in root folder');
         
         const blob = await response.blob();
-
-        // 3. Create a temporary download link
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = newFileName; // This sets the new name
+        a.download = newFileName;
         
-        // 4. Trigger the download
         document.body.appendChild(a);
         a.click();
         
-        // Cleanup
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-
     } catch (err) {
         console.error(err);
         alert("Error downloading file: Ensure 'TVR-DISPATCHED-AND-UNDISPATCHED TEMPLATE.xlsx' is in the root folder.");
     }
 }
 </script>
+ 
 </body>
 </html>
