@@ -24,7 +24,7 @@
         .stats-val { display: block; font-size: 1.1rem; font-weight: bold; color: #60a5fa; }
         
         .table-container { background: white; border-radius: 8px; padding: 15px; box-shadow: var(--card-shadow); margin-bottom: 20px; }
-        .table-fixed { height: 350px; overflow-y: auto; border: 1px solid #eee; }
+        .table-fixed { height: 550px; overflow-y: auto; border: 1px solid #eee; }
         
         .driver-search { max-width: 250px; border-radius: 20px; font-size: 0.75rem; }
         .btn-xs { padding: 0.1rem 0.4rem; font-size: 0.7rem; }
@@ -136,82 +136,96 @@ const vehicleTypes = ["3 Wheels", "2 Wheels", "4 Wheels", "Flexi"];
 
 // DEFAULT ASSIGNMENTS
 const defaults = {
-    "2 Wheels": [
-  "EUGENIO ROSARIO PARAIRO",
-  "RODEL CARMELO DE BELEN MEDINO",
-  "LESTER N/A ESPIRITU",
-  "RONALD MALLARI PAGCANLUNGAN",
-  "RODERICK CARLOS DE GUZMAN",
-  "JASER CASTRO ZABAT",
-  "ARVIN RONIEL BECILLA",
-  "ANTONIO RAMOS TADIAMAN",
-  "CARLO MENDOZA PADIGDIG",
-  "CARLO ESPINOZA GALGAO",
-  "LESTER BARBARONA ALCANTARA",
-  "HAROLD CASTRO LAGASCA",
-  "JERIC ESTRADA SIBAYAN",
-  "JAYVEE PASCUA BARTOLOME",
-  "RENZ BAUTISTA SANTIAGO",
-  "JUPETH MAGNO GALINATO",
-  "EDMAR DELA CRUZ DELA CRUZ",
-  "OLIVER MACTAL MESDE",
-  "NESLYN N/A LOPEZ",
-  "MARK ADRIAN SEBASTIAN SAWIT",
+  "2 Wheels": [
+ "ANTONIO RAMOS TADIAMAN",
   "ARCHIE MANABAT CABICO",
-  "ELMAR JOHN DELA CRUZ MARTIN",
-  "YULL ERIC TALON LUQUIAS",
+  "ARMANDO CABINAN AUSTRIA",
+  "ARVIN RONIEL BECILLA",
   "BENJIE DIMALANTA AMAMIO",
-  "EDISON ROSARIO DOBLA",
-  "MARK TAHUC ESTEBAN",
-  "GRETCHEN PATRICIO SALVADOR",
-  "JOSE FLORES DAYANAN",
-  "JOHN KENNETH CASIDO CAPINDIAN",
-  "FRANCIS DELA CRUZ ORIZAL",
-  "ROMEO JR RUIZ CALLOS",
-  "RENZ PHILIP LAGASCA LACANILAO",
-  "LESTER MENDOZA PADIGDIG",
-  "RODMAN TORRENA MARIANO",
-  "EUGENE PEÑAFIEL POYAOAN",
+  "CARLO ESPINOZA GALGAO",
+  "CARLO MENDOZA PADIGDIG",
   "DANMARK MANIQUIZ VICENCIO",
+  "DARWIN NOSES SERAPIO",
+  "DAVID RON BUCO CAPILLAR",
+  "EDISON ROSARIO DOBLA",
+  "EDMAR DELA CRUZ DELA CRUZ",
+  "ELMAR JOHN DELA CRUZ MARTIN",
+  "EUGENE PEÑAFIEL POYAOAN",
+  "EUGENIO ROSARIO PARAIRO",
+  "FRANCIS DELA CRUZ ORIZAL",
+  "GERICHO ISON SAJOR",
+  "GRETCHEN PATRICIO SALVADOR",
+  "HAROLD CASTRO LAGASCA",
+  "JASER CASTRO ZABAT",
+  "JAYVEE PASCUA BARTOLOME",
+  "JEOFF DELITON TURALBA",
+  "JERIC CARBONEL ROSENDAL",
+  "JERIC ESTRADA SIBAYAN",
+  "JOEL ISIDRO URMATAN",
+  "JOHN KENNETH CASIDO CAPINDIAN",
+  "JOSE FLORES DAYANAN",
+  "JUPETH MAGNO GALINATO",
+  "LESTER BARBARONA ALCANTARA",
+  "LESTER MENDOZA PADIGDIG",
+  "LESTER N/A ESPIRITU",
+  "MARK ADRIAN SEBASTIAN SAWIT",
+  "MARK TAHUC ESTEBAN",
+  "NESLYN N/A LOPEZ",
+  "OLIVER MACTAL MESDE",
   "PITTZ GERALD CASIMIRO LLANZA",
+  "RENZ BAUTISTA SANTIAGO",
+  "RENZ PHILIP LAGASCA LACANILAO",
   "RINA ANTONIO BUSTAMANTE",
-    "GERICHO ISON SAJOR",
-    "ARMANDO CABINAN AUSTRIA",
-    "VICENTE CARA DELA CRUZ",
-   "DARWIN NOSES SERAPIO",
-  "JUPETH MAGNO GALINATO"
+  "ROBERTO DE LEON NUÑEZ",
+  "RODEL CARMELO DE BELEN MEDINO",
+  "RODERICK CARLOS DE GUZMAN",
+  "RODMAN TORRENA MARIANO",
+  "ROMEO JR RUIZ CALLOS",
+  "RONALD MALLARI PAGCANLUNGAN",
+  "VENERANDO VILLAFUERTE VILORIA",
+  "VICENTE CARA DELA CRUZ",
+  "YULL ERIC TALON LUQUIAS",
 ],
     "4 Wheels": [""],
-    "Flexi": [
-  "LEONEILA CABAHIL GARCIA",
-  "MARK ANTHONY RAVELA ISON",
-  "MA. THERESA PAULINO TADIAMAN",
-  "JULUIS GAVIOLA ADRIANO",
-  "MARIELLE CABAHIL SUNGA",
-  "RYAN PAGAL CAMBE",
+ "Flexi": [
   "ALVIN BASILIO SAGUM",
-  "ARGIE LOPEZ MANABAT",
-  "LOUIE JULIAN MACAPAGAL",
-  "MAYLENE SANCHEZ ALCANTARA",
-  "MARIFE GARCIA GENCHEZ",
-  "DANILO ABAIGAR PANCHO",
-  "TANYA POLANGCO AGUILAR",
-  "ROSE ANN CANCINO FAUSTO",
-  "MICHAEL GIAN PAOLO PARAMEO LOMBRES",
-  "LEDY WALICAN ANTONIO",
-  "KATHLEEN KAYCEE MALACAD MANANSALA",
-  "BENJAMIN JR VALDEZ DACAYO",
-  "MARJORIE ERUM URMATAN",
-  "OLIVER DELA CRUZ SERRANO",
-  "GLENN CARLO ISON SAJOR",
   "ANTONIO JR SORIANO AGLIAM",
-  "GEORGE DE GUZMAN VENERACION",
-  "FRANSIS SANTIAGO CAINGAT",
-  "ERVIEN CARLOS DE GUZMAN",
-  "CHRISMALYN CORNELIO ANTONE",
+  "ARGIE LOPEZ MANABAT",
+  "BENJAMIN JR VALDEZ DACAYO",
   "BILLY JOE SANTOS LITERANO",
+  "CHRISMALYN CORNELIO ANTONE",
+  "CHRISTOPHER DC DELA CRUZ",
+  "DANILO ABAIGAR PANCHO",
+  "ERVIEN CARLOS DE GUZMAN",
+  "FRANSIS SANTIAGO CAINGAT",
+  "GEORGE DE GUZMAN VENERACION",
+  "GLENN CARLO ISON SAJOR",
+  "GLENN GALVE GALINATO",
+  "JESSIE CAMBE FERRY",
+  "JOHN MICHAEL JOSE CASIMIRO",
+  "JULUIS GAVIOLA ADRIANO",
+  "KATHLEEN KAYCEE MALACAD MANANSALA",
+  "LEDY WALICAN ANTONIO",
+  "LESTER CASIMIRO PAJARILLO",
+  "LOUIE JULIAN MACAPAGAL",
+  "MA RAFAELA BAUTISTA PATALINGHUG",
   "MA TERESA GARCIA GENCHEZ",
-  "LESTER CASIMIRO PAJARILLO"
+  "MA. THERESA PAULINO TADIAMAN",
+  "MARIELLE CABAHIL SUNGA",
+  "MARIFE GARCIA GENCHEZ",
+  "MARJORIE ERUM URMATAN",
+  "MARK ANTHONY RAVELA ISON",
+  "MAYLENE SANCHEZ ALCANTARA",
+  "MICHAEL GIAN PAOLO PARAMEO LOMBRES",
+  "NELSON CUADRO VERIDIANO",
+  "NICOLE PANTALEON MARIANO",
+  "OLIVER DELA CRUZ SERRANO",
+  "ROSE ANN CANCINO FAUSTO",
+  "RYAN PAGAL CAMBE",
+  "REYNALDO CASTILLO PARAISO",
+  "TANYA POLANGCO AGUILAR",
+ "LEONEILA CABAHIL GARCIA",
+
 ],
 };
 
@@ -258,7 +272,8 @@ const extractData = (file) => {
                 for (let k in r) { row[k.toLowerCase().trim()] = r[k]; }
                 return {
                     spx: String(row["spx tracking num"] || "").trim().toUpperCase(),
-                    driver: String(row["driver name"] || "UNKNOWN").trim().toUpperCase()
+                    // Replace multiple spaces with a single space
+                    driver: String(row["driver name"] || "UNKNOWN").trim().replace(/\s+/g, ' ').toUpperCase()
                 };
             }).filter(r => r.spx !== "");
             resolve(normalized);
@@ -269,10 +284,15 @@ const extractData = (file) => {
 
 function autoAssignDrivers() {
     const uniqueDrivers = [...new Set(rawData.map(r => r.driver))];
+    
+    // Helper function to normalize extra spaces during comparison
+    const cleanStr = (str) => str.trim().replace(/\s+/g, ' ').toUpperCase();
+    const isDefault = (list, name) => list.some(d => cleanStr(d) === cleanStr(name));
+
     uniqueDrivers.forEach(d => {
-        if (defaults["2 Wheels"].includes(d)) driverMap[d] = "2 Wheels";
-        else if (defaults["4 Wheels"].includes(d)) driverMap[d] = "4 Wheels";
-        else if (defaults["Flexi"].includes(d)) driverMap[d] = "Flexi";
+        if (isDefault(defaults["2 Wheels"], d)) driverMap[d] = "2 Wheels";
+        else if (isDefault(defaults["4 Wheels"], d)) driverMap[d] = "4 Wheels";
+        else if (isDefault(defaults["Flexi"], d)) driverMap[d] = "Flexi";
         else if (!driverMap[d]) driverMap[d] = "3 Wheels";
     });
 }
